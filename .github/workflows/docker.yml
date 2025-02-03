@@ -3,10 +3,10 @@ name: Build and Test Docker Compose
 on:
   push:
     branches:
-      - release  # branch for the release
-  pull_request:
-    branches:
-      - release  # trigger on PR to the release branch
+      - release  # branch for the release (Runs when the code is merged into release)
+  # pull_request:
+  #   branches:
+  #     - release  # trigger on PR to the release branch
 
 jobs:
   build-and-test:
