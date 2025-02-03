@@ -1,0 +1,39 @@
+name: Build and Test Docker Compose
+
+on:
+  push:
+    branches:
+      - release  # branch for the release
+  pull_request:
+    branches:
+      - release  # trigger on PR to the release branch
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest  # Ubuntu for now can change to different one
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Build and run Docker Compose
+        run: |
+          docker-compose -f docker-compose.yml up -d --build
+          docker-compose logs 
+
+      # - name: Run tests
+      #   run: |
+      #     # Replace this with your actual test command (e.g., inside the container)
+      #     docker-compose exec <your-service-name> npm run test
+          
+      - name: Shut down Docker Compose
+        run: |
+          docker-compose down
