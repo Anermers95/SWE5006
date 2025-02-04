@@ -52,16 +52,26 @@ jobs:
     needs: build-and-test  # Runs after successful build and test
     runs-on: ubuntu-latest
     steps:
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}  # Add your Docker Hub username to GitHub Secrets
+        password: ${{ secrets.DOCKERHUB_TOKEN }}  # Add your Docker Hub token to GitHub Secrets
+
+    - name: Debug Docker Image Tag
+      run: |
+        echo "Backend Image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:backend-0.1"
+    
     - name: Run Snyk to check backend Docker image for vulnerabilities
       uses: snyk/actions/docker@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        image: vinetage/swe5006:backend-0.1
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:backend-0.1
 
     - name: Run Snyk to check frontend Docker image for vulnerabilities
       uses: snyk/actions/docker@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        image: vinetage/swe5006:frontend-0.1
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:frontend-0.1
