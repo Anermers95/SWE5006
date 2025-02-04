@@ -24,10 +24,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y docker-compose
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}  # Add your Docker Hub username to GitHub Secrets
+          password: ${{ secrets.DOCKERHUB_TOKEN }}  # Add your Docker Hub token to GitHub Secrets
+
       - name: Build and run Docker Compose
         run: |
           docker-compose -f docker-compose.yml up -d --build
-          docker-compose logs 
+          docker-compose logs
+
+      - name: Push Docker images to Docker Hub
+        run: |
+          docker-compose -f docker-compose.yml push
 
       # - name: Run tests
       #   run: |
@@ -42,18 +52,16 @@ jobs:
     needs: build-and-test  # Runs after successful build and test
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+    - name: Run Snyk to check backend Docker image for vulnerabilities
+      uses: snyk/actions/docker@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:backend-0.1
 
-      - name: Install Snyk
-        run: npm install -g snyk
-
-      - name: Authenticate with Snyk
-        run: snyk auth ${{ secrets.SNYK_TOKEN }}
-
-      - name: Run Snyk Dependency Scan
-        run: |
-          cd backend
-          snyk test --all-projects
-          cd ../frontend
-          snyk test --all-projects
+    - name: Run Snyk to check frontend Docker image for vulnerabilities
+      uses: snyk/actions/docker@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:frontend-0.1
