@@ -37,3 +37,23 @@ jobs:
       - name: Shut down Docker Compose
         run: |
           docker-compose down
+
+  snyk_scan:
+    needs: build-and-test  # Runs after successful build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install Snyk
+        run: npm install -g snyk
+
+      - name: Authenticate with Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk Dependency Scan
+        run: |
+          cd backend
+          snyk test --all-projects
+          cd ../frontend
+          snyk test --all-projects
