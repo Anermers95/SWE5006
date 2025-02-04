@@ -55,4 +55,4 @@ jobs:
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        image: vinetage/backend:0.1
+        image: vinetage/swe5006:backend-0.1
