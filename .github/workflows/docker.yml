@@ -48,49 +48,49 @@ jobs:
         run: |
           docker-compose down
 
-  snyk-scan:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-  
-      - name: Install Snyk CLI
-        run: npm install -g snyk
-  
-      - name: Authenticate Snyk
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk auth $SNYK_TOKEN
-  
-      - name: Scan Docker image from Docker Hub
-        run: |
-          snyk test --docker vinetage/swe5006:backend-0.1
-  
-      - name: Scan code for vulnerabilities
-        run: snyk test --all-projects
-    
-
-  # snyk_scan:
-  #   needs: build-and-test  # Runs after successful build and test
+  # snyk-scan:
   #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Log in to Docker Hub
-  #     uses: docker/login-action@v2
-  #     with:
-  #       username: ${{ secrets.DOCKERHUB_USERNAME }}  # Add your Docker Hub username to GitHub Secrets
-  #       password: ${{ secrets.DOCKERHUB_TOKEN }}  # Add your Docker Hub token to GitHub Secrets
-    
-  #   - name: Run Snyk to check backend Docker image for vulnerabilities
-  #     uses: snyk/actions/docker@master
-  #     env:
-  #       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-  #     with:
-  #       image: vinetage/swe5006:backend-0.1
 
-  #   - name: Run Snyk to check frontend Docker image for vulnerabilities
-  #     uses: snyk/actions/docker@master
-  #     env:
-  #       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-  #     with:
-  #       image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:frontend-0.1
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v2
+  
+  #     - name: Install Snyk CLI
+  #       run: npm install -g snyk
+  
+  #     - name: Authenticate Snyk
+  #       env:
+  #         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  #       run: snyk auth $SNYK_TOKEN
+  
+  #     - name: Scan Docker image from Docker Hub
+  #       run: |
+  #         snyk test --docker vinetage/swe5006:backend-0.1
+  
+  #     - name: Scan code for vulnerabilities
+  #       run: snyk test --all-projects
+    
+
+  snyk_scan:
+    # needs: build-and-test  # Runs after successful build and test
+    runs-on: ubuntu-latest
+    steps:
+    # - name: Log in to Docker Hub
+    #   uses: docker/login-action@v2
+    #   with:
+    #     username: ${{ secrets.DOCKERHUB_USERNAME }}  # Add your Docker Hub username to GitHub Secrets
+    #     password: ${{ secrets.DOCKERHUB_TOKEN }}  # Add your Docker Hub token to GitHub Secrets
+    
+    - name: Run Snyk to check backend Docker image for vulnerabilities
+      uses: snyk/actions/docker@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:backend-0.1
+
+    - name: Run Snyk to check frontend Docker image for vulnerabilities
+      uses: snyk/actions/docker@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:frontend-0.1
