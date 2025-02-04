@@ -2,13 +2,13 @@ version: '3.8'
 services:
   backend:
     build: ./backend
-    image: "vinetage/swe5006:backend-0.1"
+    image: "vinetage/backend:0.1"
     ports:
       - "3000:3000"
 
   frontend:
     build: ./frontend
-    image: "vinetage/swe5006:frontend-0.1"
+    image: "vinetage/frontend:0.1"
     ports:
       - "5173:5173"
     depends_on:
