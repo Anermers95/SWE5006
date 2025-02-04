@@ -57,11 +57,11 @@ jobs:
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:backend-0.1
+        image: vinetage/swe5006:backend-0.1
 
     - name: Run Snyk to check frontend Docker image for vulnerabilities
       uses: snyk/actions/docker@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:frontend-0.1
+        image: vinetage/swe5006:frontend-0.1
