@@ -80,7 +80,7 @@ jobs:
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        image: node/slim
+        image: vinetage/backend:0.1
     # - name: Log in to Docker Hub
     #   uses: docker/login-action@v2
     #   with:
