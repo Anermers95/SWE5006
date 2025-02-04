@@ -81,16 +81,20 @@ jobs:
     #     username: ${{ secrets.DOCKERHUB_USERNAME }}  # Add your Docker Hub username to GitHub Secrets
     #     password: ${{ secrets.DOCKERHUB_TOKEN }}  # Add your Docker Hub token to GitHub Secrets
     
-    - name: Run Snyk to check backend Docker image for vulnerabilities
-      uses: snyk/actions/docker@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:backend-0.1
+    # - name: Run Snyk to check backend Docker image for vulnerabilities
+    #   uses: snyk/actions/docker@master
+    #   env:
+    #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    #   with:
+    #     image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:backend-0.1
 
-    - name: Run Snyk to check frontend Docker image for vulnerabilities
-      uses: snyk/actions/docker@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:frontend-0.1
+    # - name: Run Snyk to check frontend Docker image for vulnerabilities
+    #   uses: snyk/actions/docker@master
+    #   env:
+    #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    #   with:
+    #     image: ${{ secrets.DOCKERHUB_USERNAME }}/swe5006:frontend-0.1
+      - name: Scan code for vulnerabilities
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --all-projects
