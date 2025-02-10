@@ -28,6 +28,7 @@ const getUserById = async (req, res) => {
 // Create a new user
 const createUser = async (req, res) => {
     try {
+        console.log( req.body);
         const { email, full_name, password, role_id, is_active } = req.body;
 
         if (!email || !full_name || !password) {
