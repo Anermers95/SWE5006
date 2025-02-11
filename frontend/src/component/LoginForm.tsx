@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { Link } from "react-router-dom";
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,9 +65,9 @@ const LoginForm = () => {
 
       <div className="flex items-center justify-center py-6 text-center bg-gray-50 dark:bg-gray-700">
         <span className="text-lg text-gray-600 dark:text-gray-200">Don't have an account?</span>
-        <a href="#" className="mx-2 text-lg font-bold text-blue-500 dark:text-blue-400 hover:underline">
+        <Link to="/register" className="mx-2 text-lg font-bold text-blue-500 dark:text-blue-400 hover:underline">
           Register
-        </a>
+        </Link>
       </div>
     </div>
   );
