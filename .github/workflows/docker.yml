@@ -34,6 +34,29 @@ jobs:
         run: |
           docker-compose -f docker-compose.yml up -d --build
           docker-compose logs
+          echo "Waiting for AWS connection..."
+          
+          MAX_RETRIES=12  # Waits up to 60 seconds (12 retries * 5 seconds)
+          RETRY_COUNT=0
+
+          while ! docker-compose logs | grep -q "Connected to PostgreSQL"; do
+            if docker-compose logs | grep -q "Database connection error"; then
+              echo "❌ Database connection failed. Stopping GitHub Actions."
+              exit 1  # This will stop GitHub Actions with a failure
+            fi
+
+            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+              echo "❌ Timed out waiting for AWS connection. Stopping GitHub Actions."
+              exit 1
+            fi
+
+            echo "⏳ Waiting for AWS connection... (Attempt $((RETRY_COUNT+1))/$MAX_RETRIES)"
+            sleep 5
+            RETRY_COUNT=$((RETRY_COUNT+1))
+          done
+
+          echo "✅ AWS connection established."
+
 
       - name: Push Docker images to Docker Hub
         run: |
