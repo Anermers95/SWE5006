@@ -12,6 +12,12 @@ const getById = async (id) => {
     return rows[0]; // Return single user object
 };
 
+// Get user by ID
+const getByEmail = async (email) => {
+    const { rows } = await pool.query('SELECT * FROM T_USERS WHERE USER_EMAIL = $1', [email]);
+    return rows[0]; // Return single user object
+}; 
+
 // Create a new user
 const create = async ({ email, full_name, password, role_id, is_active }) => {
     console.log(email);
@@ -40,4 +46,4 @@ const deleteUser = async (id) => {
     return rowCount > 0; // Return true if deleted, false otherwise
 };
 
-module.exports = { getAll, getById, create, update, delete: deleteUser };
+module.exports = { getAll, getById, create, update, delete: deleteUser,getByEmail };

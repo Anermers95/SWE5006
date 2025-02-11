@@ -1,4 +1,5 @@
 const userModel = require('../models/userModel');
+const { use } = require('../routes/userRoutes');
 
 // Get all users
 const getAllUsers = async (req, res) => {
@@ -35,6 +36,11 @@ const createUser = async (req, res) => {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
+        const existingEmail = await userModel.getByEmail(email);
+        if(existingEmail)
+        {
+            return res.status(400).json({ message: 'Email is already in use' });
+        }
         const newUser = await userModel.create({ email, full_name, password, role_id, is_active });
         res.status(201).json({ message: 'User created successfully', user: newUser });
     } catch (error) {
@@ -73,6 +79,9 @@ const deleteUser = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+
+
 
 module.exports = {
     getAllUsers,

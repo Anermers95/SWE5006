@@ -1,20 +1,23 @@
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 
 const RegisterForm = () => {
+  const navigate = useNavigate(); // Use navigate hook
+
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",  // Changed to match the backend field
     password: "",
-    role_id: "1", // Default role as "Asdmin"
+    role_id: "0", // Default role as "0" (no selection)
     is_active: true, // Default to active
-    confirmPassword:""
+    confirmPassword: ""
   });
 
   const [confirmPassword, setConfirmPassword] = useState(""); // To manage confirmPassword field
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [accountTypeError, setAccountTypeError] = useState(""); // To store account type error
 
   // Handle input changes
   const handleChange = (e: any) => {
@@ -28,16 +31,25 @@ const RegisterForm = () => {
 
   const handleAccountTypeChange = (type: any) => {
     setFormData({ ...formData, role_id: type });
+    setAccountTypeError(""); // Clear error when the user selects an account type
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setAccountTypeError(""); // Reset account type error on submit
 
     // Password match check
     if (formData.password !== confirmPassword) {
       setError("Passwords do not match!");
+      setLoading(false);
+      return;
+    }
+
+    // Account type validation check
+    if (formData.role_id === "0") {
+      setAccountTypeError("Please select an account type.");
       setLoading(false);
       return;
     }
@@ -57,6 +69,7 @@ const RegisterForm = () => {
       );
       console.log("Response:", response.data);
       alert("Registration successful!");
+      navigate("/login");
     } catch (err: any) {
       setError(err.response?.data?.message || "Registration failed!");
     } finally {
@@ -89,19 +102,25 @@ const RegisterForm = () => {
                 <h1 className="text-gray-500 dark:text-gray-300">Select type of account</h1>
                 <div className="mt-3 md:flex md:items-center md:-mx-2">
                   <button
-                    onClick={() => handleAccountTypeChange("Student")}
-                    className={`flex justify-center w-full px-6 py-3 rounded-lg md:w-auto md:mx-2 focus:outline-none ${formData.role_id === "Student" ? "bg-blue-500 text-white" : "text-blue-500 bg-white border border-blue-500"}`}
+                    onClick={() => handleAccountTypeChange("1")}
+                    className={`flex justify-center w-full px-6 py-3 rounded-lg md:w-auto md:mx-2 focus:outline-none ${formData.role_id === "1" ? "bg-blue-500 text-white" : "text-blue-500 bg-white border border-blue-500"}`}
+                  >
+                    Admin
+                  </button>
+                  <button
+                    onClick={() => handleAccountTypeChange("2")}
+                    className={`flex justify-center w-full px-6 py-3 rounded-lg md:w-auto md:mx-2 focus:outline-none ${formData.role_id === "2" ? "bg-blue-500 text-white" : "text-blue-500 bg-white border border-blue-500"}`}
                   >
                     Student
                   </button>
-
                   <button
-                    onClick={() => handleAccountTypeChange("Lecturer")}
-                    className={`flex justify-center w-full px-6 py-3 mt-4 rounded-lg md:mt-0 md:w-auto md:mx-2 focus:outline-none ${formData.role_id === "Lecturer" ? "bg-blue-500 text-white" : "text-blue-500 bg-white border border-blue-500"}`}
+                    onClick={() => handleAccountTypeChange("3")}
+                    className={`flex justify-center w-full px-6 py-3 mt-4 rounded-lg md:mt-0 md:w-auto md:mx-2 focus:outline-none ${formData.role_id === "3" ? "bg-blue-500 text-white" : "text-blue-500 bg-white border border-blue-500"}`}
                   >
                     Lecturer
                   </button>
                 </div>
+                {accountTypeError && <p className="text-red-500 mt-2">{accountTypeError}</p>}
               </div>
 
               {/* Registration Form */}
