@@ -1,13 +1,34 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate} from "react-router-dom";
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [message, setMessage] = useState(""); 
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Email:", email);
-    console.log("Password:", password);
+    console.log("email:", email);
+    console.log("password: ", password);
+    try {
+      const response = await fetch("http://localhost:3000/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }), // Send plaintext password
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage("✅ Login successful!");
+        localStorage.setItem("user", JSON.stringify(data.user)); // Store user details
+        navigate("/dashboard"); // Redirect after login
+      } else {
+        setMessage(data.message || "❌ Invalid email or password.");
+      }
+    } catch (error) {
+      setMessage("❌ Server error, please try again later.");
+    }
   };
 
   return (
