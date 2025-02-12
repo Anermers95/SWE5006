@@ -1,5 +1,4 @@
 const userModel = require('../models/userModel');
-const { use } = require('../routes/userRoutes');
 
 // Get all users
 const getAllUsers = async (req, res) => {
@@ -69,7 +68,7 @@ const updateUser = async (req, res) => {
 // Delete user
 const deleteUser = async (req, res) => {
     try {
-        const deleted = await userModel.delete(req.params.id);
+        const deleted = await userModel.deleteUser(req.params.id);
         if (!deleted) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -79,9 +78,6 @@ const deleteUser = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
-
-
 
 module.exports = {
     getAllUsers,
