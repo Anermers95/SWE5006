@@ -8,6 +8,10 @@
     "vitest": "^2.1.6"
   },
   "scripts": {
-    "test": "vitest"
+    "test": "vitest run --coverage"
+    
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.6"
   }
 }
