@@ -6,9 +6,54 @@ on:
       - staging
 
 jobs:
-  Staging-Build-and-Test-Backend:
+  Build-App:
     runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
 
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Build & run Docker Compose then await Database Connection
+        run: |
+          docker-compose -f docker-compose.yml up -d --build
+          docker-compose logs
+          echo "Waiting for Database connection..."
+          
+          MAX_RETRIES=12  # Waits up to 60 seconds (12 retries * 5 seconds)
+          RETRY_COUNT=0
+
+          while ! docker-compose logs | grep -q "Connected to PostgreSQL"; do
+            if docker-compose logs | grep -q "Database connection error"; then
+              echo "❌ Database connection failed. Stopping GitHub Actions."
+              exit 1  # This will stop GitHub Actions with a failure
+            fi
+
+            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+              echo "❌ Timed out waiting for DB connection. Stopping GitHub Actions."
+              exit 1
+            fi
+
+            echo "⏳ Waiting for DB connection... (Attempt $((RETRY_COUNT+1))/$MAX_RETRIES)"
+            sleep 5
+            RETRY_COUNT=$((RETRY_COUNT+1))
+          done
+
+          echo "✅ Database connection established."
+          
+      - name: Shut down Docker Compose
+        run: |
+          docker-compose down
+
+  Staging-Build-and-Test-Backend:
+    needs: Build-App
+    runs-on: ubuntu-latest
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
