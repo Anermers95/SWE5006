@@ -43,7 +43,6 @@ const getAllUsers = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
 // Get a user by ID
 const getUserById = async (req, res) => {
     try {
@@ -58,7 +57,6 @@ const getUserById = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
 // Create a new user
 const createUser = async (req, res) => {
     try {
@@ -81,7 +79,6 @@ const createUser = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
 // Update user
 const updateUser = async (req, res) => {
     try {
@@ -98,11 +95,10 @@ const updateUser = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
 // Delete user
 const deleteUser = async (req, res) => {
     try {
-        const deleted = await userModel.delete(req.params.id);
+        const deleted = await userModel.deleteUser(req.params.id);
         if (!deleted) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -112,10 +108,6 @@ const deleteUser = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
-
-
-
 module.exports = {
     loginUser,
     getAllUsers,

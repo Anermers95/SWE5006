@@ -46,4 +46,4 @@ const deleteUser = async (id) => {
     return rowCount > 0; // Return true if deleted, false otherwise
 };
 
-module.exports = { getAll, getById, create, update, delete: deleteUser,getByEmail };
+module.exports = { getAll, getById, create, update, deleteUser,getByEmail };

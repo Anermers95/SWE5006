@@ -12,3 +12,16 @@ docker compose down
 // Removes old image to release reserved space on local computer
 docker system prune -a
 ```
+
+# Running the backend
+- CD to backend
+```
+// Run the unit test for backend
+npm run test
+
+// Code coverage test
+// <Insert code here>
+
+// Run backend as server
+node 
+```
