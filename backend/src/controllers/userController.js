@@ -15,9 +15,13 @@
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
-    
+        
+        console.log("Hashed password from DB:", user.user_password);
         // Compare passwords directly (plaintext check)
-        if (password !== user.user_password) {
+        const isMatch = await bcrypt.compare(password.trim(), user.user_password);
+        if (!isMatch) {
+
+            console.log(isMatch);
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
@@ -26,6 +30,8 @@
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN } // e.g., '1h'
         );
+
+        console.log(token);
     
         // Send user details (excluding password)
         const userData = {
@@ -88,7 +94,7 @@
             const newUser = await userModel.create({ 
                 email, 
                 full_name, 
-                hashedPassword, 
+                password: hashedPassword, 
                 role_id, is_active });
             res.status(201).json({ message: 'User created successfully', user: newUser });
         } catch (error) {
