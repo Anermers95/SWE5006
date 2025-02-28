@@ -17,7 +17,7 @@ const getRoomById = async (req, res) => {
         const roomId = parseInt(req.params.id, 10);
         const room = await roomModel.getById(roomId);
         if (!room) {
-            return res.status(404).json({ message: 'room not found' });
+            return res.status(404).json({ message: 'Room not found' });
         }
         res.json(room);
     } catch (error) {
@@ -56,7 +56,7 @@ const createRoom = async (req, res) => {
             return res.status(400).json({ message: 'Room name is already in use' });
         }
         const newroom = await roomModel.create({ roomName, capacity, room_type, buildingName, is_active });
-        res.status(201).json({ message: 'room created successfully', room: newroom });
+        res.status(201).json({ message: 'Room created successfully', room: newroom });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -69,10 +69,10 @@ const updateRoom = async (req, res) => {
         const updatedroom = await roomModel.update(req.params.id, { roomName, capacity, room_type, buildingName, is_active});
 
         if (!updatedroom) {
-            return res.status(404).json({ message: 'room not found' });
+            return res.status(404).json({ message: 'Room not found' });
         }
 
-        res.json({ message: 'room updated successfully', room: updatedroom });
+        res.json({ message: 'Room updated successfully', room: updatedroom });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -83,9 +83,9 @@ const deleteRoom = async (req, res) => {
     try {
         const deleted = await roomModel.deleteRoom(req.params.id);
         if (!deleted) {
-            return res.status(404).json({ message: 'room not found' });
+            return res.status(404).json({ message: 'Room not found' });
         }
-        res.json({ message: 'room deleted successfully' });
+        res.json({ message: 'Room deleted successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
