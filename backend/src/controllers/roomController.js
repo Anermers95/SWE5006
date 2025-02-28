@@ -46,7 +46,7 @@ const createRoom = async (req, res) => {
         console.log( req.body);
         const { roomName, capacity, room_type, buildingName, is_active} = req.body;
 
-        if (!roomName || !buildingName || !capacity || !room_type) {
+        if (!roomName || !capacity || !buildingName || !room_type) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 

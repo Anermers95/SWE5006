@@ -32,13 +32,13 @@ const create = async ({ roomName, capacity, room_type, buildingName, is_active }
 
 
 // Update room by ID
-const update = async ({ roomName, capacity, room_type, buildingName, is_active }) => {
+const update = async (id, {roomName, capacity, room_type, buildingName, is_active }) => {
     console.log(roomName);
     const { rows } = await pool.query(
         `UPDATE t_rooms
         SET room_name = $1, room_seating_capacity = $2, room_type = $3, building_name = $4, is_active = $5, created_on = NOW(), updated_on = NOW()
-        WHERE room_id=$6; RETURNING *`,
-        [roomName, capacity, room_type, buildingName, is_active,id]
+        WHERE room_ID = $6 RETURNING *`,
+        [roomName, capacity, room_type, buildingName, is_active, id]
     );
     return rows[0]; // Return created room
 };
