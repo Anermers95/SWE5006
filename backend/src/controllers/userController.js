@@ -7,6 +7,7 @@
         try {
         const { email, password } = req.body;
         
+        // Check if email and password are provided
         if (!email || !password) {
             return res.status(400).json({ message: "Missing email or password" });
         }
