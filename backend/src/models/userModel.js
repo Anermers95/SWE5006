@@ -1,4 +1,5 @@
 const pool = require('../config/db'); // PostgreSQL connection
+const bcrypt = require('bcryptjs'); // Password hashing
 
 // Get all users
 const getAll = async () => {
@@ -21,6 +22,8 @@ const getByEmail = async (email) => {
 // Create a new user
 const create = async ({ email, full_name, password, role_id, is_active }) => {
     console.log(email);
+    // const hashedPassword = await bcrypt.hash(password, 10);
+    console.log(password);
     const { rows } = await pool.query(
         `INSERT INTO T_USERS (USER_EMAIL, USER_FULL_NAME, USER_PASSWORD, USER_ROLE_ID, CREATED_ON, UPDATED_ON, IS_ACTIVE) 
          VALUES ($1, $2, $3, $4, NOW(), NOW(), $5) RETURNING *`,
