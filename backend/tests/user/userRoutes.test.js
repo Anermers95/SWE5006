@@ -5,6 +5,7 @@ import pool from './../../src/config/db'; // Adjust the path as necessary
 import userRouter from '../../src/routes/userRoutes'; // Ensure the correct path to userRoutes
 import * as userController from '../../src/controllers/userController'; // Using import syntax
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 
 // Mock the controller functions using ESModules import
 // vi.mock('../../src/controllers/userController', () => ({
@@ -43,11 +44,17 @@ describe('User Routes', () => {
 
     it('GET /users - should call getAllUsers', async () => {
         const response = await request(app).get('/users');
+        
         expect(response.status).toBe(200);
     });
 
   it('GET /users/:id - should call getUserById', async () => {
-    const response = await request(app).get(`/users/${userId}`);
+    const token = jwt.sign({ id: userId, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    
+    const response = await request(app)
+        .get(`/users/${userId}`)
+        .set('Authorization', `Bearer ${token}`); // ✅ Attach token in Authorization header
+
     expect(response.status).toBe(200);
   });
 
@@ -67,12 +74,19 @@ describe('User Routes', () => {
         password: 'updatedpassword123',
         role_id: 2,
         is_active: false };
-    const response = await request(app).put(`/users/${userId}`).send(updatedUser);
+    const token = jwt.sign({ id: userId, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    const response = await request(app)
+    .put(`/users/${userId}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send(updatedUser);
     expect(response.status).toBe(200);
   });
 
   it('DELETE /users/:id - should call deleteUser', async () => {
-    const response = await request(app).delete(`/users/${userId}`);
+    const token = jwt.sign({ id: userId, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    const response = await request(app).delete(`/users/${userId}`).set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
   });
 });
