@@ -1,5 +1,4 @@
     const userModel = require('../models/userModel');
-    const { use } = require('../routes/userRoutes');
     const jwt = require('jsonwebtoken');
     const bcrypt = require('bcryptjs');
 
@@ -7,6 +6,7 @@
         try {
         const { email, password } = req.body;
         
+        // Check if email and password are provided
         if (!email || !password) {
             return res.status(400).json({ message: "Missing email or password" });
         }
