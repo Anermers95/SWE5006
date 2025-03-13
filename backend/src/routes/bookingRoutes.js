@@ -11,20 +11,20 @@ router.get('/:id([0-9]+)', bookingController.getBookingById);
 
 // Protected routes (require authentication)
 // GET /api/bookings/user/:userId - Get all bookings for a specific user
-router.get('/user/:userId', authMiddleware, bookingController.getBookingsByUserId); 
+router.get('/user/:userId', bookingController.getBookingsByUserId); 
  // GET /api/bookings/room/:roomId - Get all bookings for a specific room
-router.get('/room/:roomId', authMiddleware, bookingController.getBookingsByRoomId);
+router.get('/room/:roomId', bookingController.getBookingsByRoomId);
  // POST /api/bookings - Create a new booking
-router.post('/', authMiddleware, bookingController.createBooking);
+router.post('/', bookingController.createBooking);
  // PUT /api/bookings/:id - Update an existing booking
-router.put('/:id', authMiddleware, bookingController.updateBooking);
+router.put('/:id', bookingController.updateBooking);
 // PATCH /api/bookings/:id/cancel - Cancel a booking (soft delete)
-router.patch('/:id/cancel', authMiddleware, bookingController.cancelBooking); 
+router.patch('/:id/cancel', bookingController.cancelBooking); 
  // DELETE /api/bookings/:id - Permanently delete a booking
-router.delete('/:id', authMiddleware, bookingController.deleteBooking);
+router.delete('/:id', bookingController.deleteBooking);
  // GET /api/bookings/logs - Get all booking logs
-router.get('/logs', authMiddleware, bookingController.getBookingLogs);
+router.get('/logs', bookingController.getBookingLogs);
 // GET /api/bookings/logs/:id - Get logs for a specific booking
-router.get('/logs/:id', authMiddleware, bookingController.getBookingLogs); 
+router.get('/logs/:id', bookingController.getBookingLogs); 
 
 module.exports = router; // Export the router for use in the main application

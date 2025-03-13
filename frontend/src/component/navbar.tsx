@@ -75,6 +75,12 @@ const Navbar: React.FC = () => {
               </a>
               <a
                 className="my-2 text-gray-700 dark:text-gray-200 hover:text-blue-500 md:mx-4 md:my-0"
+                href="/book"
+              >
+                Book Room
+              </a>
+              <a
+                className="my-2 text-gray-700 dark:text-gray-200 hover:text-blue-500 md:mx-4 md:my-0"
                 href="#"
                 onClick={clickLogout}
               >
