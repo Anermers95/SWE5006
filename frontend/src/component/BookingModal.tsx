@@ -223,8 +223,6 @@ const BookingModal = ({ isOpen, onClose, roomId, onBookingSuccess }: BookingModa
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-        {/* Semi-transparent overlay that still shows background */}
-        <div className="absolute inset-0 bg-black bg-opacity-30"></div>
         
         {/* Modal content */}
         <div className="bg-white rounded-lg shadow-lg w-full max-w-lg z-10 mx-4">
