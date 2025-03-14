@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
-import BookingModal from "./BookingModal"; // Import the booking modal component
+import BookingModal from "./BookingModal";
 
 interface Room {
   room_id: number;
@@ -12,6 +12,16 @@ interface Room {
   is_active: boolean;
   description?: string;
   image_url?: string;
+}
+
+interface Booking {
+  booking_id: number;
+  room_id: number;
+  user_id: number;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
 }
 
 interface NotificationProps {
@@ -77,11 +87,15 @@ const RoomListings = () => {
   // State management
   const [user, setUser] = useState<any>({});
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("");
   const [filterCapacity, setFilterCapacity] = useState<number | "">("");
   const [filterBuilding, setFilterBuilding] = useState<string>("");
+  const [filterDate, setFilterDate] = useState<string>("");
+  const [filterStartTime, setFilterStartTime] = useState<string>("");
+  const [filterEndTime, setFilterEndTime] = useState<string>("");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
@@ -90,7 +104,21 @@ const RoomListings = () => {
   // Sample image for rooms that don't have one
   const defaultRoomImage = "https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=800&amp;q=80";
   
-  // Fetch rooms from API
+  // Get current date in YYYY-MM-DD format for default date filter
+  const getCurrentDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Set default date to today
+  useEffect(() => {
+    setFilterDate(getCurrentDate());
+  }, []);
+
+  // Fetch rooms and bookings from API
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
 
@@ -104,6 +132,7 @@ const RoomListings = () => {
     }
 
     fetchRooms();
+    fetchBookings();
   }, [bookingSuccess]); // Refetch rooms when a booking is successful
 
   // Function to fetch rooms from backend
@@ -134,11 +163,136 @@ const RoomListings = () => {
     }
   };
 
+  // Function to fetch bookings from backend
+  const fetchBookings = async () => {
+    try {
+      // Call the API to get all bookings
+      const response = await axios.get('http://localhost:3000/booking');
+      
+      if (response.data && Array.isArray(response.data)) {
+        setBookings(response.data);
+        console.log(`Found ${response.data.length} bookings`);
+      } else {
+        console.error("Invalid bookings response format:", response.data);
+        setBookings([]);
+      }
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
+      setBookings([]);
+    }
+  };
+
+  // Check if a room is available at the selected time slot
+  const isRoomAvailable = (roomId: number) => {
+    // If no date or time filters are set, room is considered available
+    if (!filterDate || (!filterStartTime && !filterEndTime)) return true;
+
+    // Find bookings for this room on the selected date
+    const roomBookings = bookings.filter(booking => {
+      // Check if date parts match (accounting for timezone)
+      let bookingDate;
+      
+      if (booking.booking_date) {
+        bookingDate = booking.booking_date;
+      } else {
+        // Handle ISO format with timezone
+        const bookingDateTime = new Date(booking.start_time);
+        bookingDate = bookingDateTime.toISOString().split('T')[0];
+      }
+      
+      return booking.room_id === roomId && 
+             bookingDate === filterDate &&
+             booking.status !== 'cancelled';
+    });
+
+    // If no bookings exist for this room on selected date, it's available
+    if (roomBookings.length === 0) return true;
+
+    // Convert HH:MM time to minutes for comparison
+    const timeToMinutes = (timeStr: string): number => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + (minutes || 0);
+    };
+    
+    // Extract time from ISO format and convert to minutes
+    const isoTimeToMinutes = (isoStr: string): number => {
+      const date = new Date(isoStr);
+      return date.getUTCHours() * 60 + date.getUTCMinutes();
+    };
+
+    // If only start time filter is set (e.g., "14:00")
+    if (filterStartTime && !filterEndTime) {
+      const filterMinutes = timeToMinutes(filterStartTime);
+      
+      // Check if the selected time conflicts with any booking
+      return !roomBookings.some(booking => {
+        const startMinutes = isoTimeToMinutes(booking.start_time);
+        const endMinutes = isoTimeToMinutes(booking.end_time);
+        
+        console.log(
+          `Comparing filter time ${filterStartTime} (${filterMinutes} mins) with booking`,
+          `${new Date(booking.start_time).toISOString()} (${startMinutes} mins) to`,
+          `${new Date(booking.end_time).toISOString()} (${endMinutes} mins)`
+        );
+        
+        // If filter time is between booking start and end time, it's not available
+        return filterMinutes >= startMinutes && filterMinutes < endMinutes;
+      });
+    }
+
+    // If only end time filter is set
+    if (!filterStartTime && filterEndTime) {
+      const filterMinutes = timeToMinutes(filterEndTime);
+      
+      return !roomBookings.some(booking => {
+        const startMinutes = isoTimeToMinutes(booking.start_time);
+        const endMinutes = isoTimeToMinutes(booking.end_time);
+        
+        // If filter end time is between booking start and end, it's not available
+        return filterMinutes > startMinutes && filterMinutes <= endMinutes;
+      });
+    }
+
+    // If both start and end time filters are set
+    if (filterStartTime && filterEndTime) {
+      const filterStartMinutes = timeToMinutes(filterStartTime);
+      const filterEndMinutes = timeToMinutes(filterEndTime);
+      
+      return !roomBookings.some(booking => {
+        const bookingStartMinutes = isoTimeToMinutes(booking.start_time);
+        const bookingEndMinutes = isoTimeToMinutes(booking.end_time);
+        
+        // Check for any overlap between requested time and booked time
+        // Case 1: Filter start time falls within a booking
+        const case1 = filterStartMinutes >= bookingStartMinutes && filterStartMinutes < bookingEndMinutes;
+        
+        // Case 2: Filter end time falls within a booking
+        const case2 = filterEndMinutes > bookingStartMinutes && filterEndMinutes <= bookingEndMinutes;
+        
+        // Case 3: Filter time completely contains a booking
+        const case3 = filterStartMinutes <= bookingStartMinutes && filterEndMinutes >= bookingEndMinutes;
+        
+        console.log(
+          `Checking overlap for ${filterStartTime}-${filterEndTime} with`,
+          `${new Date(booking.start_time).toUTCString()}-${new Date(booking.end_time).toUTCString()}:`,
+          case1 ? "Filter start inside booking" : 
+          case2 ? "Filter end inside booking" :
+          case3 ? "Filter contains booking" : "No overlap"
+        );
+        
+        return case1 || case2 || case3;
+      });
+    }
+    
+    return true;
+  };
+
   // Filter rooms based on criteria - only showing active rooms
   const filteredRooms = rooms.filter(room => {
     if (filterType && room.room_type !== filterType) return false;
     if (filterCapacity && room.room_seating_capacity < Number(filterCapacity)) return false;
     if (filterBuilding && room.building_name !== filterBuilding) return false;
+    if (!isRoomAvailable(room.room_id)) return false;
     return room.is_active === true; // Only include active rooms
   });
 
@@ -146,18 +300,43 @@ const RoomListings = () => {
   const uniqueTypes = Array.from(new Set(rooms.map(room => room.room_type)));
   const uniqueBuildings = Array.from(new Set(rooms.map(room => room.building_name)));
 
+  // Generate time options for select dropdown (30-minute intervals)
+  const generateTimeOptions = () => {
+    const options = [];
+    for (let hour = 8; hour < 22; hour++) {
+      for (let minute of ['00', '30']) {
+        const time24h = `${hour.toString().padStart(2, '0')}:${minute}`;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+        const displayTime = `${hour12}:${minute} ${ampm}`;
+        
+        options.push(
+          <option key={time24h} value={time24h}>{displayTime}</option>
+        );
+      }
+    }
+    return options;
+  };
+
   // Handle booking room
   const handleBookRoom = (roomId: number) => {
     // Open booking modal with selected room
     setSelectedRoomId(roomId);
-    setIsBookingModalOpen(true);
+    
+    // Pre-set booking date and time in modal if filters are active
+    if (filterDate && filterStartTime && filterEndTime) {
+      setIsBookingModalOpen(true);
+      // You might need to modify your BookingModal to accept preselected values
+    } else {
+      setIsBookingModalOpen(true);
+    }
   };
 
   // Handle booking success
   const handleBookingSuccess = () => {
     setBookingSuccess(prev => !prev); // Toggle to trigger a refetch
     setNotification({
-      message: "✅ Room booked successfully! Your booking has been confirmed.",
+      message: "Room booked successfully! Your booking has been confirmed.",
       success: true
     });
     
@@ -177,6 +356,44 @@ const RoomListings = () => {
   const handleViewDetails = (roomId: number) => {
     console.log(`Navigate to details page for room ${roomId}`);
     window.location.href = `/rooms/${roomId}`;
+  };
+
+  // Clear time filters
+  const clearTimeFilters = () => {
+    setFilterDate(getCurrentDate());
+    setFilterStartTime("");
+    setFilterEndTime("");
+  };
+
+  // Generate date options for the next 30 days
+  const generateDateOptions = () => {
+    const options = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      // Format for display (e.g., "Mar 14, 2025")
+      const displayDate = date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      });
+      
+      options.push(
+        <option key={formattedDate} value={formattedDate}>
+          {displayDate}
+        </option>
+      );
+    }
+    
+    return options;
   };
 
   return (
@@ -208,7 +425,9 @@ const RoomListings = () => {
           {/* Filters Section */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h2 className="font-medium text-lg mb-4 text-gray-900">Filters</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            {/* Room Properties Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               {/* Room Type Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">Room Type</label>
@@ -256,6 +475,79 @@ const RoomListings = () => {
                 </select>
               </div>
             </div>
+            
+            {/* Availability Filters */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="font-medium text-md mb-3 text-gray-900">Availability Filters</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Date Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Date</label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      className="w-full border border-gray-300 rounded-md p-2 text-gray-900 appearance-none"
+                      value={filterDate}
+                      onChange={(e) => setFilterDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Start Time Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Start Time</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-md p-2 text-gray-900 bg-white"
+                    value={filterStartTime}
+                    onChange={(e) => setFilterStartTime(e.target.value)}
+                  >
+                    <option value="">Any Start Time</option>
+                    {generateTimeOptions()}
+                  </select>
+                </div>
+
+                {/* End Time Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">End Time</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-md p-2 text-gray-900 bg-white"
+                    value={filterEndTime}
+                    onChange={(e) => setFilterEndTime(e.target.value)}
+                    disabled={!filterStartTime} // Disable if no start time selected
+                  >
+                    <option value="">Any End Time</option>
+                    {filterStartTime && generateTimeOptions().filter(option => 
+                      option.props.value > filterStartTime
+                    )}
+                  </select>
+                </div>
+
+                {/* Clear Filters Button */}
+                <div className="flex items-end">
+                  <button 
+                    onClick={clearTimeFilters}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150"
+                  >
+                    Reset Time Filters
+                  </button>
+                </div>
+              </div>
+              
+              {/* Availability Status */}
+              {filterDate && filterStartTime && (
+                <div className="mt-3 text-sm text-blue-600">
+                  Showing rooms available on {new Date(filterDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {filterStartTime && ` from ${filterStartTime}`}
+                  {filterEndTime && ` to ${filterEndTime}`}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Room Listings */}
@@ -283,19 +575,14 @@ const RoomListings = () => {
                           alt={`${room.room_name} - ${room.room_type}`}
                           className="w-full h-full object-cover"
                         />
-                        {!room.is_active && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">Currently Unavailable</span>
-                          </div>
-                        )}
                       </div>
                       
                       {/* Room Details */}
                       <div className="p-4 flex-1 flex flex-col">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="text-xl font-semibold text-gray-800">{room.room_name}</h3>
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${room.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {room.is_active ? 'Available' : 'Unavailable'}
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                            Available
                           </span>
                         </div>
                         
@@ -333,12 +620,7 @@ const RoomListings = () => {
                           </button>
                           <button
                             onClick={() => handleBookRoom(room.room_id)}
-                            className={`flex-1 font-medium py-2 px-4 rounded transition duration-150 ${
-                              room.is_active
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                            disabled={!room.is_active}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150"
                           >
                             Book Room
                           </button>
@@ -366,10 +648,13 @@ const RoomListings = () => {
       {/* Booking Modal */}
       <BookingModal 
         isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
+        onClose={handleCloseBookingModal}
         roomId={selectedRoomId}
-        onBookingSuccess={() => { /* Handle success */ }}
-        />
+        onBookingSuccess={handleBookingSuccess}
+        selectedDate={filterDate}
+        selectedStartTime={filterStartTime}
+        selectedEndTime={filterEndTime}
+      />
     </div>
   );
 };
