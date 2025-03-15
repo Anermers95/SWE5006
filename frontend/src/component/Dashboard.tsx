@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
+import EditBookingModal from "./EditBookingModal";
 
 interface Booking {
   booking_id: number;
@@ -32,7 +33,9 @@ const Dashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   // Filter
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-
+  // Edit booking
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null);
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
 
@@ -117,12 +120,28 @@ const Dashboard = () => {
       minute: "2-digit"
     });
   };
-
+  const format12HourTime = (dateString: string) => {
+    // First parse the UTC time
+    const date = new Date(dateString);
+    
+    // Manually adjust for Singapore timezone (UTC+8)
+    // Instead of using the browser's timezone conversion which might be causing issues
+    const singaporeTime = new Date(date.getTime());
+    
+    // Format the time in 12-hour format
+    const hours = singaporeTime.getUTCHours();
+    const minutes = singaporeTime.getUTCMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+    
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+  
+  // Use this version of formatBookingTime in Dashboard.tsx
   const formatBookingTime = (startTime: string, endTime: string) => {
-    // Convert from 24-hour to 12-hour format
-    const start = TimeConversion(startTime);
-    const end = TimeConversion(endTime);
-
+    const start = format12HourTime(startTime);
+    const end = format12HourTime(endTime);
+  
     // Check if booking is upcoming, ongoing, or past
     const now = new Date();
     const startDate = new Date(startTime);
@@ -139,30 +158,39 @@ const Dashboard = () => {
     
     return { formattedTime: `${start} - ${end}`, status };
   };
-
   const handleCancelClick = (booking: Booking) => {
     console.log("Trying to cancel booking:", booking);
     setSelectedBooking(booking);
     setIsModalOpen(true);
+  };
+  const handleEditBooking = (booking: Booking) => {
+    console.log("Opening edit modal for booking:", booking);
+    setBookingToEdit(booking);
+    setIsEditModalOpen(true);
   };
 
   const handleCancelConfirm = async () => {
     if (!selectedBooking) return;
     
     try {
-      // Call API to cancel booking
-      await axios.put(`http://localhost:3000/booking/${selectedBooking.booking_id}`, {
-        status: 'cancelled',
-        is_active: false
-      });
+      // Call API to delete booking instead of just canceling it
+      // Use the DELETE HTTP method to completely remove the booking
+      await axios.delete(`http://localhost:3000/booking/${selectedBooking.booking_id}`);
       
       // Refresh bookings list
       fetchUserBookings(user.user_id);
       
-      console.log("Canceled booking:", selectedBooking);
+      console.log("Deleted booking:", selectedBooking);
+      
+      // Optional: Show success message
+      setError(null); // Clear any previous errors
+      
+      // You could add a success message state if you want to show a toast or notification
+      // setSuccessMessage("Booking successfully deleted");
+      
     } catch (error) {
-      console.error("Error cancelling booking:", error);
-      setError("Failed to cancel booking. Please try again.");
+      console.error("Error deleting booking:", error);
+      setError("Failed to delete booking. Please try again.");
     } finally {
       setIsModalOpen(false);
       setSelectedBooking(null);
@@ -173,6 +201,16 @@ const Dashboard = () => {
     setSelectedBooking(null);
     setIsModalOpen(false);
   };
+  const handleEditClose = () => {
+    setBookingToEdit(null);
+    setIsEditModalOpen(false);
+  };
+
+  // Handle successful booking edit
+  const handleEditSuccess = () => {
+    fetchUserBookings(user.user_id);
+  };
+
 
   const getStatusClass = (status: string) => {
     switch (status) {
@@ -344,13 +382,21 @@ const Dashboard = () => {
                             </div>
                             <div className="p-6 pt-0">
                               {booking.is_active && status !== "past" && (
+                                <div className="mt-auto pt-4 flex space-x-2">
                                 <button
-                                  className="select-none rounded-lg bg-red-500 py-3 px-6 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none w-full"
+                                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition duration-150"
                                   type="button"
                                   onClick={() => handleCancelClick(booking)}
                                 >
                                   Cancel Booking
                                 </button>
+                                <button
+                                  onClick={() => handleEditBooking(booking)}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150"
+                                >
+                                  Edit Booking
+                                </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -365,31 +411,81 @@ const Dashboard = () => {
         </div>
       </div>
       {/* Modal for confirmation */}
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-8 rounded-lg w-full max-w-md">
-            <h3 className="text-xl text-black font-semibold mb-4">Are you sure you want to cancel this booking?</h3>
-            <p className="mb-4 text-gray-600">
-              Room: <span className="font-medium">{selectedBooking?.room_name}</span><br />
-              Date: <span className="font-medium">{DateConversion(selectedBooking?.start_time || "")}</span><br />
-              Time: <span className="font-medium">{TimeConversion(selectedBooking?.start_time || "")} - {TimeConversion(selectedBooking?.end_time || "")}</span>
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-6 rounded-md transition duration-150"
-                onClick={handleCancelClose}
-              >
-                No, Keep It
-              </button>
-              <button
-                className="bg-red-500 hover:bg-red-600 text-white py-2 px-6 rounded-md transition duration-150"
-                onClick={handleCancelConfirm}
-              >
-                Yes, Cancel
-              </button>
+      // Update the cancel modal time display section in Dashboard.tsx
+
+    {/* Modal for cancel confirmation - Updated to match the design in Image 2 */}
+{/* Modal for cancel confirmation - Using Tailwind UI modal structure */}
+{isModalOpen && (
+  <div className="relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    {/* Background backdrop */}
+    <div className="fixed inset-0 bg-gray-500/75 transition-opacity" aria-hidden="true"></div>
+    
+    <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+      <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        {/* Modal panel */}
+        <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
+                <svg className="size-6 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+              </div>
+              
+              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                <h3 className="text-base font-semibold text-gray-900" id="modal-title">
+                  Are you sure you want to cancel this booking?
+                </h3>
+                
+                <div className="mt-4">
+                  <div className="text-sm text-gray-600 space-y-2">
+                    <p>
+                      <span className="inline-block w-14">Room:</span> 
+                      <span className="font-medium">{selectedBooking?.room_name}</span>
+                    </p>
+                    <p>
+                      <span className="inline-block w-14">Date:</span> 
+                      <span className="font-medium">{DateConversion(selectedBooking?.start_time || "")}</span>
+                    </p>
+                    <p>
+                      <span className="inline-block w-14">Time:</span> 
+                      <span className="font-medium">{format12HourTime(selectedBooking?.start_time || "")} - {format12HourTime(selectedBooking?.end_time || "")}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+          
+          <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+            <button 
+              type="button" 
+              className="inline-flex w-full justify-center rounded-md bg-gray-800 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-gray-700 sm:ml-3 sm:w-auto"
+              onClick={handleCancelConfirm}
+            >
+              Yes, Cancel
+            </button>
+            <button 
+              type="button" 
+              className="inline-flex w-full justify-center rounded-md bg-gray-800 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-gray-700 sm:ml-3 sm:w-auto"
+              onClick={handleCancelClose}
+            >
+              No, Keep It
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
+)}
+   {/* Modal for editing booking */}
+   {isEditModalOpen && bookingToEdit && (
+        <EditBookingModal
+          isOpen={isEditModalOpen}
+          onClose={handleEditClose}
+          booking={bookingToEdit}
+          onEditSuccess={handleEditSuccess}
+        />
       )}
     </>
   );

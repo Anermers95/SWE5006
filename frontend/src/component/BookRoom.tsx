@@ -365,37 +365,6 @@ const RoomListings = () => {
     setFilterEndTime("");
   };
 
-  // Generate date options for the next 30 days
-  const generateDateOptions = () => {
-    const options = [];
-    const today = new Date();
-    
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-      
-      // Format for display (e.g., "Mar 14, 2025")
-      const displayDate = date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        year: 'numeric'
-      });
-      
-      options.push(
-        <option key={formattedDate} value={formattedDate}>
-          {displayDate}
-        </option>
-      );
-    }
-    
-    return options;
-  };
-
   return (
     // Wrapper with dark background to match dashboard
     <div className="flex flex-col w-full min-h-screen">
