@@ -33,28 +33,15 @@ interface TimeSlot {
   disabled: boolean;
 }
 
-// Helper function to calculate duration
+// Updated to match hourly calculation with inclusive hours
 const getDurationText = (startTime: string, endTime: string): string => {
   const startHour = parseInt(startTime.split(':')[0]);
-  const startMinute = parseInt(startTime.split(':')[1] || "0");
   const endHour = parseInt(endTime.split(':')[0]);
-  const endMinute = parseInt(endTime.split(':')[1] || "0");
   
-  // Calculate total minutes
-  const startMinutes = startHour * 60 + startMinute;
-  const endMinutes = endHour * 60 + endMinute;
-  const durationMinutes = endMinutes - startMinutes;
+  // Calculate hours accounting for an inclusive end time
+  const hours = endHour - startHour + 1;
   
-  const hours = Math.floor(durationMinutes / 60);
-  const minutes = durationMinutes % 60;
-  
-  if (hours === 0) {
-    return `${minutes} minute(s)`;
-  } else if (minutes === 0) {
-    return `${hours} hour(s)`;
-  } else {
-    return `${hours} hour(s) and ${minutes} minute(s)`;
-  }
+  return `${hours} hour${hours !== 1 ? 's' : ''}`;
 };
 
 const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBookingModalProps) => {
@@ -71,9 +58,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
   const [error, setError] = useState<string | null>(null);
   
   // Initialize form with booking data
-  // Update the useEffect in the EditBookingModal.tsx file to correctly handle the time conversion
-
-useEffect(() => {
+  useEffect(() => {
     if (isOpen && booking) {
       fetchRoomDetails();
       
@@ -82,26 +67,22 @@ useEffect(() => {
       setDate(bookingDate);
       
       // Extract hours and minutes directly from the UTC times stored in the database
-      // This ensures we're getting the actual stored times, not converting them
       const startDate = new Date(booking.start_time);
       const endDate = new Date(booking.end_time);
       
       // Get the hours directly - do NOT apply timezone offset
       const startHour = startDate.getUTCHours().toString().padStart(2, '0');
-      const startMinute = startDate.getUTCMinutes().toString().padStart(2, '0');
-      const startTime = `${startHour}:${startMinute}`;
+      // For hourly slots, always use 00 minutes
+      const startTime = `${startHour}:00`;
       
       const endHour = endDate.getUTCHours().toString().padStart(2, '0');
-      const endMinute = endDate.getUTCMinutes().toString().padStart(2, '0');
-      const endTime = `${endHour}:${endMinute}`;
+      const endTime = `${endHour}:00`;
       
       console.log("Setting times from UTC values:", { 
         startOriginal: booking.start_time,
         endOriginal: booking.end_time,
-        startHour, 
-        startMinute, 
-        endHour, 
-        endMinute 
+        startHour,
+        endHour
       });
       
       setSelectedStartTime(startTime);
@@ -128,7 +109,7 @@ useEffect(() => {
     }
   };
   
-  // Generate time slots from 8 AM to 10 PM
+  // Generate time slots from 8 AM to 10 PM (hourly only)
   const generateTimeSlots = () => {
     const slots: TimeSlot[] = [];
     for (let hour = 8; hour <= 22; hour++) {
@@ -140,14 +121,6 @@ useEffect(() => {
         id: `${hourStr}:00`,
         label: `${displayHour}:00 ${ampm}`,
         value: `${hourStr}:00`,
-        disabled: false
-      });
-      
-      // Add 30-minute intervals
-      slots.push({
-        id: `${hourStr}:30`,
-        label: `${displayHour}:30 ${ampm}`,
-        value: `${hourStr}:30`,
         disabled: false
       });
     }
@@ -174,14 +147,24 @@ useEffect(() => {
         const startTime = new Date(b.start_time);
         const endTime = new Date(b.end_time);
         
-        let currentHour = startTime.getHours();
-        const endHour = endTime.getHours();
+        // Use UTC hours to avoid timezone issues
+        const startHour = startTime.getUTCHours();
+        const endHour = endTime.getUTCHours();
         
-        // Mark all half-hour slots between start and end as booked
-        while (currentHour < endHour) {
-          bookedTimes.push(`${currentHour.toString().padStart(2, '0')}:00`);
-          bookedTimes.push(`${currentHour.toString().padStart(2, '0')}:30`);
-          currentHour++;
+        console.log(`Processing booking: ${startHour}:00 - ${endHour}:00`);
+        
+        // Mark every hour from start time to end time as booked (inclusive)
+        for (let hour = startHour; hour <= endHour; hour++) {
+          // Only add slots within our 8 AM to 10 PM range
+          if (hour >= 8 && hour <= 22) {
+            const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+            
+            // Add to booked slots if not already there
+            if (!bookedTimes.includes(timeSlot)) {
+              bookedTimes.push(timeSlot);
+              console.log(`Marking as booked: ${timeSlot}`);
+            }
+          }
         }
       });
       
@@ -223,60 +206,40 @@ useEffect(() => {
     setSelectedEndTime(endTime);
   };
   
+  // Updated to match the booking modal's hourly approach
   const getAvailableEndTimes = () => {
     if (!selectedStartTime) return [];
     
     const startHour = parseInt(selectedStartTime.split(':')[0]);
-    const startMinute = parseInt(selectedStartTime.split(':')[1] || "0");
-    const maxDuration = 4; // 4 hour maximum
     
-    // Calculate end time options
+    // For a 4-hour booking starting at 1pm, the end time should be 4pm
+    // This means the maximum end hour is startHour + 3
+    const maxEndHour = Math.min(startHour + 3, 22); // 4-hour maximum (inclusive), limited to 10 PM
+    
     const endTimes = [];
-    let currentHour = startHour;
-    let currentMinute = startMinute;
     
-    // First end time should be at least 30 minutes after start
-    if (currentMinute === 0) {
-      currentMinute = 30;
-    } else {
-      currentHour += 1;
-      currentMinute = 0;
-    }
-    
-    const maxEndHour = Math.min(startHour + maxDuration, 22);
-    
-    while (currentHour <= maxEndHour) {
-      const hourStr = currentHour.toString().padStart(2, '0');
-      const minuteStr = currentMinute.toString().padStart(2, '0');
-      const timeValue = `${hourStr}:${minuteStr}`;
+    // Start from the next hour
+    for (let hour = startHour + 1; hour <= maxEndHour; hour++) {
+      const hourStr = hour.toString().padStart(2, '0');
+      const timeSlot = `${hourStr}:00`;
       
-      // Check if this slot is booked
-      const isBooked = bookedSlots.includes(timeValue);
-      const isPastEnd = currentHour > maxEndHour || (currentHour === maxEndHour && currentMinute > 0);
+      // Check if this time is booked
+      const isBooked = bookedSlots.includes(timeSlot);
       
-      // Skip if booked or past max duration
-      if (isBooked && timeValue !== selectedEndTime) {
-        break; // Stop at first booked slot
-      }
-      
-      if (!isPastEnd) {
-        const ampm = currentHour >= 12 ? 'PM' : 'AM';
-        const displayHour = currentHour > 12 ? currentHour - 12 : currentHour;
+      // Add to available end times if not booked
+      if (!isBooked) {
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour > 12 ? hour - 12 : hour;
         
         endTimes.push({
-          id: timeValue,
-          label: `${displayHour}:${minuteStr} ${ampm}`,
-          value: timeValue,
+          id: timeSlot,
+          label: `${displayHour}:00 ${ampm}`,
+          value: timeSlot,
           disabled: false
         });
-      }
-      
-      // Move to next time slot
-      if (currentMinute === 0) {
-        currentMinute = 30;
       } else {
-        currentHour += 1;
-        currentMinute = 0;
+        // If we hit a booked slot, we can't go beyond this
+        break;
       }
     }
     
@@ -291,6 +254,7 @@ useEffect(() => {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minuteStr} ${ampm}`;
   };
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     
@@ -320,9 +284,6 @@ useEffect(() => {
     return `${day}${daySuffix} ${month} ${year}`;
   };
   
-  
-  // Replace the handleSubmit function in EditBookingModal.tsx to correctly handle time conversion
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -381,7 +342,7 @@ useEffect(() => {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 flex items-center justify-center  bg-opacity-50 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-opacity-50 z-50">
       {/* Dark overlay */}
       <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
       
@@ -442,8 +403,9 @@ useEffect(() => {
                             key={slot.id} 
                             value={slot.value}
                             disabled={slot.disabled && slot.value !== selectedStartTime}
+                            style={{color: slot.disabled && slot.value !== selectedStartTime ? '#D1D5DB' : 'inherit'}}
                           >
-                            {slot.label}
+                            {slot.label}{slot.disabled && slot.value !== selectedStartTime ? ' (Booked)' : ''}
                           </option>
                         ))}
                       </select>
@@ -464,6 +426,7 @@ useEffect(() => {
                                 key={slot.id} 
                                 value={slot.value}
                                 disabled={slot.disabled}
+                                style={{color: slot.disabled ? '#D1D5DB' : 'inherit'}}
                               >
                                 {slot.label}
                               </option>
@@ -481,9 +444,13 @@ useEffect(() => {
                 )}
                 
                 <p className="mt-2 text-sm text-blue-600">
-                  Current booking: {formatDate(date)}, {selectedStartTime && selectedEndTime ? 
+                  Current booking: {formatDate(booking.start_time)}, {selectedStartTime && selectedEndTime ? 
                     `${format12HourTime(selectedStartTime)} - ${format12HourTime(selectedEndTime)}` : 
                     "Time not selected"}
+                </p>
+                
+                <p className="mt-2 text-xs text-gray-500">
+                  Note: Time slots that are already booked will appear grayed out and cannot be selected.
                 </p>
               </div>
               
