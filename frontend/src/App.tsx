@@ -4,7 +4,7 @@ import LoginForm from './component/LoginForm'
 import RegisterForm from './component/RegisterForm' // Import Register Page component
 import HomePage from './component/HomePage'
 import Dashboard from './component/Dashboard'
-
+import RoomListings from './component/BookRoom'
 //ProtectedRoute
 import ProtectedRoute from './security/ProtectedRoute'
 
@@ -19,6 +19,7 @@ function App() {
 
         {/* Protect the route */}
         <Route path = "/dashboard" element={<ProtectedRoute element={<Dashboard />} />}/>
+        <Route path="/book" element={<RoomListings />} />
 
       </Routes>
     </Router>
