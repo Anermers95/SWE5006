@@ -89,7 +89,7 @@ const RoomForm = () => {
   return (
 
     <div className="max-w-2xl mx-auto">
-      <div className="mt-3 md:flex md:items-center md:-mx-2">
+      <div className="relative z-0 mb-6 w-full group">
         <h1 className="text-2xl font-semibold tracking-wider text-gray-800 capitalize dark:text-white">
           {/* Switch between Update and Create Room header*/}
           {id ? "Update Room" : "Create Room"}
