@@ -11,17 +11,47 @@ const RoomForm = () => {
     capacity: "",
     room_type: "",
     buildingName: "",
-    is_active: true,
+    is_active: false,
   });
 
+
   // Handle input changes
-  const handleChange = (e: any) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // const handleChange = (e: any) => {
+  //   const { name, type, checked, value } = e.target;
+  //   setFormData({
+  //     ...formData, 
+  //     [name]: type === "checkbox" ? checked : value
+  //   });
+  // };
+
+    // Handle input changes
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, type, checked, value } = e.target;
+      
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? !prev[name as keyof typeof prev] : value, // Toggle checkbox
+      }));
+    };
+
+  // const handleCheckboxChange = (event: any) => {
+  //   setIsChecked(event.target.checked);
+  // };
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
+      const retriveResponse = await axios.get("http://localhost:3000/rooms");
+      console.log(retriveResponse.data.name);
+
+      for(let i = 0; i < retriveResponse.data.length; i++){
+        if(retriveResponse.data[i].room_name === formData.roomName && retriveResponse.data[i].building_name === formData.buildingName){
+          alert("Room Name already exist within this building!");
+          return;
+        }
+      }
+
       const response = await axios.post("http://localhost:3000/rooms", formData);
       console.log(response.data);
       alert("Room Created Successful!");
@@ -33,8 +63,14 @@ const RoomForm = () => {
 
 
   return (
-    
+
     <div className="max-w-2xl mx-auto">
+      <div className="mt-3 md:flex md:items-center md:-mx-2">
+        <h1 className="text-2xl font-semibold tracking-wider text-gray-800 capitalize dark:text-white">
+          Create/Update room
+        </h1>
+      </div>
+
       <form onSubmit={handleSubmit}>
         <div className="relative z-0 mb-6 w-full group">
           <input
@@ -89,8 +125,13 @@ const RoomForm = () => {
             id="heckbox-1"
             aria-describedby="checkbox-1"
             type="checkbox"
+            name = "is_active"
+            checked={formData.is_active}
+            onChange={handleChange}
             className="bg-gray-50 border-gray-300 focus:ring-3 focus:ring-blue-300 h-4 w-4 rounded"
           />
+         
+
           <label htmlFor="checkbox-1" className="text-sm ml-3 font-medium text-gray-900">Is Active</label>
         </div>
         <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
