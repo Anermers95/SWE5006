@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "./navbar";
 import axios from "axios";
 
@@ -15,6 +16,8 @@ interface Room {
 }
 
 const RoomList = () => {
+    const navigate = useNavigate(); // Use navigate hook
+
     const [user, setUser] = useState<any>({});
     const [rooms, setRooms] = useState<Room[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -58,9 +61,25 @@ const RoomList = () => {
 
     // Handle viewing room details
     const handleViewDetails = (roomId: number) => {
-        console.log(`Navigate to details page for room ${roomId}`);
-        window.location.href = `/room/update/${roomId}`;
+        console.log(`Navigate to update page for room ${roomId}`);
+        navigate(`/room/update/${roomId}`);
     };
+
+  // Handle delete room
+  const handleDelete = async (roomId: number) => {
+
+    const confirmDelete = window.confirm("Are you sure you want to delete this room?");
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`http://localhost:3000/rooms/${roomId}`);
+      alert("Room deleted successfully!");
+      window.location.href = `/room`;
+    } catch (error) {
+      console.error("Error deleting room:", error);
+    }
+  };
+
     // Filter rooms based on criteria - only showing active rooms
     const filteredRooms = rooms.filter(room => {
         if (filterType && room.room_type !== filterType) return false;
@@ -74,7 +93,7 @@ const RoomList = () => {
     const uniqueBuildings = Array.from(new Set(rooms.map(room => room.building_name)));
 
     const navigateCreateRoom = async () => {
-        window.location.href = "/room/create";
+        navigate("/room/create");
     }
 
 
@@ -165,7 +184,7 @@ const RoomList = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="grid xl:grid-cols-2 gap-100">
+                            <div className="grid xl:grid-cols-2 gap-100 relative">
                                 <p className="mb-4 text-gray-600">Showing {filteredRooms.length} out of {rooms.length} rooms</p>
                                 <button
                                     onClick={navigateCreateRoom}
@@ -226,6 +245,9 @@ const RoomList = () => {
                                                     >
                                                         Update Room
                                                     </button>
+                                                    <button  className="flex-no-shrink bg-red-500 px-5 ml-4 py-2 text-sm shadow-sm hover:shadow-lg font-medium tracking-wider border-2 border-red-500 text-white rounded-full"
+                                                    onClick={() => handleDelete(room.room_id)}>Delete</button>
+
                                                 </div>
                                             </div>
                                         </div>

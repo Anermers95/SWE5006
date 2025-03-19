@@ -48,9 +48,6 @@ const RoomForm = () => {
     }));
   };
 
-  // const handleCheckboxChange = (event: any) => {
-  //   setIsChecked(event.target.checked);
-  // };
 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -91,7 +88,7 @@ const RoomForm = () => {
     <div className="max-w-2xl mx-auto">
       <div className="relative z-0 mb-6 w-full group">
         <h1 className="text-2xl font-semibold tracking-wider text-gray-800 capitalize dark:text-white">
-          {/* Switch between Update and Create Room header*/}
+          {/* Switch between Update Room and Create Room header*/}
           {id ? "Update Room" : "Create Room"}
 
         </h1>
