@@ -1,10 +1,12 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
 
 const RoomForm = () => {
   const navigate = useNavigate(); // Use navigate hook
+
+  const { id } = useParams(); // Get the id from the URL (if updating)
 
   const [formData, setFormData] = useState({
     roomName: "",
@@ -13,26 +15,38 @@ const RoomForm = () => {
     buildingName: "",
     is_active: false,
   });
+  const [loading, setLoading] = useState(true);
 
+
+  // Fetch room details if updating
+  useEffect(() => {
+    if (id) {
+      axios.get(`http://localhost:3000/rooms/${id}`)
+        .then((response) => {
+          setFormData({
+            roomName: response.data.room_name,
+            capacity: response.data.room_seating_capacity,
+            room_type: response.data.room_type,
+            buildingName: response.data.building_name,
+            is_active: response.data.is_active,
+          });
+        })
+        .catch((error) => console.error("Error fetching room details:", error))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [id]);
 
   // Handle input changes
-  // const handleChange = (e: any) => {
-  //   const { name, type, checked, value } = e.target;
-  //   setFormData({
-  //     ...formData, 
-  //     [name]: type === "checkbox" ? checked : value
-  //   });
-  // };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, type, checked, value } = e.target;
 
-    // Handle input changes
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, type, checked, value } = e.target;
-      
-      setFormData((prev) => ({
-        ...prev,
-        [name]: type === "checkbox" ? !prev[name as keyof typeof prev] : value, // Toggle checkbox
-      }));
-    };
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? !prev[name as keyof typeof prev] : value, // Toggle checkbox
+    }));
+  };
 
   // const handleCheckboxChange = (event: any) => {
   //   setIsChecked(event.target.checked);
@@ -42,32 +56,44 @@ const RoomForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const retriveResponse = await axios.get("http://localhost:3000/rooms");
-      console.log(retriveResponse.data.name);
+      if (id) {
+        // Update Room
+        await axios.put(`http://localhost:3000/rooms/${id}`, formData);
+        alert("Room updated successfully!");
+        navigate("/room");
+      } else {
+        // Create Room
+        const retriveResponse = await axios.get("http://localhost:3000/rooms");
+        console.log(retriveResponse.data.name);
 
-      for(let i = 0; i < retriveResponse.data.length; i++){
-        if(retriveResponse.data[i].room_name === formData.roomName && retriveResponse.data[i].building_name === formData.buildingName){
-          alert("Room Name already exist within this building!");
-          return;
+        for (let i = 0; i < retriveResponse.data.length; i++) {
+          if (retriveResponse.data[i].room_name === formData.roomName && retriveResponse.data[i].building_name === formData.buildingName) {
+            alert("Room Name already exist within this building!");
+            return;
+          }
         }
-      }
 
-      const response = await axios.post("http://localhost:3000/rooms", formData);
-      console.log(response.data);
-      alert("Room Created Successful!");
-      navigate("/room");
+        const response = await axios.post("http://localhost:3000/rooms", formData);
+        console.log(response.data);
+        alert("Room Created Successful!");
+        navigate("/room");
+      }
     } catch (error) {
       console.log(error);
     }
+
   };
 
+  if (loading) return <p>Loading room details...</p>;
 
   return (
 
     <div className="max-w-2xl mx-auto">
       <div className="mt-3 md:flex md:items-center md:-mx-2">
         <h1 className="text-2xl font-semibold tracking-wider text-gray-800 capitalize dark:text-white">
-          Create/Update room
+          {/* Switch between Update and Create Room header*/}
+          {id ? "Update Room" : "Create Room"}
+
         </h1>
       </div>
 
@@ -125,16 +151,18 @@ const RoomForm = () => {
             id="heckbox-1"
             aria-describedby="checkbox-1"
             type="checkbox"
-            name = "is_active"
+            name="is_active"
             checked={formData.is_active}
             onChange={handleChange}
             className="bg-gray-50 border-gray-300 focus:ring-3 focus:ring-blue-300 h-4 w-4 rounded"
           />
-         
+
 
           <label htmlFor="checkbox-1" className="text-sm ml-3 font-medium text-gray-900">Is Active</label>
         </div>
-        <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
+        <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+          {id ? "Update Room" : "Create Room"}
+        </button>
       </form>
 
       <p className="mt-5">Check out the original floating label form elements on <a className="text-blue-600 hover:underline"

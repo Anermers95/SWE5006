@@ -59,7 +59,7 @@ const RoomList = () => {
     // Handle viewing room details
     const handleViewDetails = (roomId: number) => {
         console.log(`Navigate to details page for room ${roomId}`);
-        window.location.href = `/rooms/${roomId}`;
+        window.location.href = `/room/update/${roomId}`;
     };
     // Filter rooms based on criteria - only showing active rooms
     const filteredRooms = rooms.filter(room => {
@@ -224,7 +224,7 @@ const RoomList = () => {
                                                         onClick={() => handleViewDetails(room.room_id)}
                                                         className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition duration-150"
                                                     >
-                                                        View Details
+                                                        Update Room
                                                     </button>
                                                 </div>
                                             </div>

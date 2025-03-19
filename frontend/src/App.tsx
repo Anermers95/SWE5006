@@ -25,6 +25,9 @@ function App() {
         <Route path="/book" element={<RoomListings />} />
         <Route path="/room" element={<RoomManagement />} />
         <Route path="/room/create" element={<RoomForm />} />
+        <Route path="/room/update/:id" element={<RoomForm />} />
+
+        
 
 
 
