@@ -87,7 +87,7 @@ const deleteRoom = async (req, res) => {
     try {
         // Get room with bookings, if any return error
         const roomWithBooking = await bookingModel.getByRoomId(req.params.id);
-        if (roomWithBooking) {
+        if (roomWithBooking.length > 0) {
             return res.status(400).json({ message: 'Room has bookings' });
         }
 
