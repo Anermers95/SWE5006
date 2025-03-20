@@ -46,17 +46,17 @@ const getRoomByName = async (req, res) => {
 // Create a new room
 const createRoom = async (req, res) => {
     try {
-        console.log( req.body);
-        const { roomName, capacity, room_type, buildingName, is_active} = req.body;
+        console.log(req.body);
+        const { roomName, capacity, room_type, buildingName, is_active } = req.body;
 
         if (!roomName || !capacity || !buildingName || !room_type) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
         // Check if room name is already in use in building
-        const exsitingBuildingName = await roomModel.getByRoomAndBuilding(roomName);
-        if(exsitingBuildingName)
-        {
+        const exsitingBuildingName = await roomModel.getByRoomAndBuilding(roomName, buildingName);
+        console.log('Existing Room within building ',exsitingBuildingName);
+        if (exsitingBuildingName) {
             return res.status(400).json({ message: 'Room name is already in use within building' });
         }
         const newroom = await roomModel.create({ roomName, capacity, room_type, buildingName, is_active });
@@ -70,7 +70,20 @@ const createRoom = async (req, res) => {
 const updateRoom = async (req, res) => {
     try {
         const { roomName, capacity, room_type, buildingName, is_active } = req.body;
-        const updatedroom = await roomModel.update(req.params.id, { roomName, capacity, room_type, buildingName, is_active});
+
+        // Check if room name or building name is unchange
+        const room = await roomModel.getById(req.params.id);
+        if (room.room_name === roomName && room.building_name === buildingName) {
+            console.log('Pass');
+        } else {
+            // Check if room name is already in use in building
+            const exsitingBuildingName = await roomModel.getByRoomAndBuilding(roomName, buildingName);
+            if (exsitingBuildingName) {
+                return res.status(400).json({ message: 'Room name is already in use within building' });
+            }
+        }
+
+        const updatedroom = await roomModel.update(req.params.id, { roomName, capacity, room_type, buildingName, is_active });
 
         if (!updatedroom) {
             return res.status(404).json({ message: 'Room not found' });
@@ -87,12 +100,13 @@ const deleteRoom = async (req, res) => {
     try {
         // Get room with bookings, if any return error
         const roomWithBooking = await bookingModel.getByRoomId(req.params.id);
+        console.log('Room with booking',roomWithBooking);
         if (roomWithBooking.length > 0) {
             return res.status(400).json({ message: 'Room has bookings' });
         }
 
         // Delete room
-        const deleted = await roomModel.deleteRoom(req.params.id);  
+        const deleted = await roomModel.deleteRoom(req.params.id);
         if (!deleted) {
             return res.status(404).json({ message: 'Room not found' });
         }

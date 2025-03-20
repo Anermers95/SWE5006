@@ -7,6 +7,8 @@ const RoomForm = () => {
   const navigate = useNavigate(); // Use navigate hook
 
   const { id } = useParams(); // Get the id from the URL (if updating)
+  const [initialData, setInitialData] = useState<{ roomName: string; buildingName: string } | null>(null);
+
 
   const [formData, setFormData] = useState({
     roomName: "",
@@ -23,6 +25,10 @@ const RoomForm = () => {
     if (id) {
       axios.get(`http://localhost:3000/rooms/${id}`)
         .then((response) => {
+          const roomUpdateData = {
+            roomName: response.data.room_name,
+            buildingName: response.data.building_name,
+          };
           setFormData({
             roomName: response.data.room_name,
             capacity: response.data.room_seating_capacity,
@@ -30,6 +36,8 @@ const RoomForm = () => {
             buildingName: response.data.building_name,
             is_active: response.data.is_active,
           });
+          setInitialData(roomUpdateData); // Store the initial values
+
         })
         .catch((error) => console.error("Error fetching room details:", error))
         .finally(() => setLoading(false));
@@ -54,10 +62,24 @@ const RoomForm = () => {
     e.preventDefault();
     try {
       if (id) {
+        // Check if the room name and building name is changed
+        if (initialData && (formData.roomName !== initialData.roomName || formData.buildingName !== initialData.buildingName)) {
+          const retriveResponse = await axios.get("http://localhost:3000/rooms");
+          console.log(retriveResponse.data.name);
+
+          for (let i = 0; i < retriveResponse.data.length; i++) {
+            if (retriveResponse.data[i].room_name === formData.roomName && retriveResponse.data[i].building_name === formData.buildingName) {
+              alert("Room Name already exist within this building!");
+              return;
+            }
+          }
+        } 
+        
         // Update Room
         await axios.put(`http://localhost:3000/rooms/${id}`, formData);
         alert("Room updated successfully!");
         navigate("/room");
+
       } else {
         // Create Room
         const retriveResponse = await axios.get("http://localhost:3000/rooms");
