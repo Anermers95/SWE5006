@@ -18,6 +18,12 @@ const getByName = async (name) => {
     return rows[0]; // Return single room object
 }; 
 
+// Get room by name and building name
+const getByRoomAndBuilding = async (name, buildingName) => {
+    const { rows } = await pool.query('SELECT * FROM t_rooms WHERE room_name = $1 AND building_name = $2', [name, buildingName]);
+    return rows[0]; // Return single room object
+};
+
 // Create a new room
 const create = async ({ roomName, capacity, room_type, buildingName, is_active }) => {
     console.log(roomName);
@@ -28,7 +34,6 @@ const create = async ({ roomName, capacity, room_type, buildingName, is_active }
     );
     return rows[0]; // Return created room
 };
-
 
 
 // Update room by ID
@@ -49,4 +54,4 @@ const deleteRoom = async (id) => {
     return rowCount > 0; // Return true if deleted, false otherwise
 };
 
-module.exports = { getAll, getById, create, update, deleteRoom,getByName };
+module.exports = { getAll, getById, create, update, deleteRoom,getByName, getByRoomAndBuilding};

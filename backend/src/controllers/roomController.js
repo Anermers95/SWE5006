@@ -1,4 +1,6 @@
 const roomModel = require('../models/roomModel');
+const bookingModel = require('../models/bookingModel');
+
 const { use } = require('../routes/roomRoutes');
 
 // Get all rooms
@@ -40,6 +42,7 @@ const getRoomByName = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 // Create a new room
 const createRoom = async (req, res) => {
     try {
@@ -50,10 +53,11 @@ const createRoom = async (req, res) => {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        const exsitingName = await roomModel.getByName(roomName);
-        if(exsitingName)
+        // Check if room name is already in use in building
+        const exsitingBuildingName = await roomModel.getByRoomAndBuilding(roomName);
+        if(exsitingBuildingName)
         {
-            return res.status(400).json({ message: 'Room name is already in use' });
+            return res.status(400).json({ message: 'Room name is already in use within building' });
         }
         const newroom = await roomModel.create({ roomName, capacity, room_type, buildingName, is_active });
         res.status(201).json({ message: 'Room created successfully', room: newroom });
@@ -81,7 +85,14 @@ const updateRoom = async (req, res) => {
 // Delete room
 const deleteRoom = async (req, res) => {
     try {
-        const deleted = await roomModel.deleteRoom(req.params.id);
+        // Get room with bookings, if any return error
+        const roomWithBooking = await bookingModel.getByRoomId(req.params.id);
+        if (roomWithBooking) {
+            return res.status(400).json({ message: 'Room has bookings' });
+        }
+
+        // Delete room
+        const deleted = await roomModel.deleteRoom(req.params.id);  
         if (!deleted) {
             return res.status(404).json({ message: 'Room not found' });
         }

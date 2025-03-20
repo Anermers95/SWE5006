@@ -68,6 +68,14 @@ const RoomList = () => {
   // Handle delete room
   const handleDelete = async (roomId: number) => {
 
+    const getRoomWithBookings =  await axios.get(`http://localhost:3000/booking/room/${roomId}/`);
+
+    if (getRoomWithBookings.data.length > 0) {
+      alert("Cannot delete room with bookings. Please delete the bookings first.");
+      return;
+    }
+    
+
     const confirmDelete = window.confirm("Are you sure you want to delete this room?");
     if (!confirmDelete) return;
 
