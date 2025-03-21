@@ -39,9 +39,9 @@ const getDurationText = (startTime: string, endTime: string): string => {
   const startHour = parseInt(startTime.split(':')[0]);
   const endHour = parseInt(endTime.split(':')[0]);
   
-  // Calculate hours accounting for an inclusive end time
-  // A booking from 2:00 to 5:00 includes 2pm, 3pm, 4pm and 5pm (4 hours)
-  const hours = endHour - startHour + 1;
+  // Calculate hours accounting for exclusive end time
+  // A booking from 6:00 to 9:00 means 6pm, 7pm, 8pm (3 hours)
+  const hours = endHour - startHour;
   
   return `${hours} hour${hours !== 1 ? 's' : ''}`;
 };
