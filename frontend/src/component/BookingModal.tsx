@@ -34,13 +34,11 @@ interface BookingData {
   status: string;
 }
 
-// Helper function to calculate and format duration
 const getDurationText = (startTime: string, endTime: string): string => {
   const startHour = parseInt(startTime.split(':')[0]);
   const endHour = parseInt(endTime.split(':')[0]);
   
-  // Calculate hours accounting for exclusive end time
-  // A booking from 6:00 to 9:00 means 6pm, 7pm, 8pm (3 hours)
+  // Calculate hours (end time is exclusive)
   const hours = endHour - startHour;
   
   return `${hours} hour${hours !== 1 ? 's' : ''}`;
@@ -149,10 +147,11 @@ const BookingModal = ({
 // Updated generateTimeSlots function that only provides hourly slots
 const generateTimeSlots = () => {
   const slots: TimeSlot[] = [];
-  for (let hour = 8; hour <= 22; hour++) {
+  // Start at 9am, end at 9pm
+  for (let hour = 9; hour <= 21; hour++) { 
     const hourStr = hour.toString().padStart(2, '0');
     const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+    const displayHour = hour > 12 ? hour - 12 : hour;
     
     slots.push({
       id: `${hourStr}:00`,
@@ -160,18 +159,16 @@ const generateTimeSlots = () => {
       value: `${hourStr}:00`,
       disabled: false
     });
-    
-    // Removed the 30-minute intervals
   }
   return slots;
 };
 
 // Updated processBookingsData function with hourly slots only
 const processBookingsData = (bookings: BookingData[]) => {
-  // Group bookings by date
   const bookedSlotsByDate: {[date: string]: string[]} = {};
   const fullyBooked: string[] = [];
-  const totalSlotsPerDay = (22 - 8 + 1); // Total possible hourly slots (8 AM to 10 PM)
+  // Total possible hourly slots (9 AM to 9 PM)
+  const totalSlotsPerDay = (21 - 9 + 1); 
   
   bookings.forEach(booking => {
     // Extract date from the booking
@@ -192,16 +189,19 @@ const processBookingsData = (bookings: BookingData[]) => {
     
     console.log(`Processing booking: ${bookingDate} ${startHour}:00 - ${endHour}:00`);
     
-    // Mark every hour from start time to end time as booked (inclusive)
+    // Mark every hour from start time up to (but normally not including) end time as booked
     for (let hour = startHour; hour <= endHour; hour++) {
-      // Only add slots within our 8 AM to 10 PM range
-      if (hour >= 8 && hour <= 22) {
-        const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-        
-        // Add to booked slots if not already there
-        if (!bookedSlotsByDate[bookingDate].includes(timeSlot)) {
-          bookedSlotsByDate[bookingDate].push(timeSlot);
-          console.log(`Marking as booked: ${bookingDate} ${timeSlot}`);
+      // Only add slots within our 9 AM to 9 PM range
+      if (hour >= 9 && hour <= 21) {
+        // Special handling: Include end hour (endHour) only if it's the last time slot (9 PM/21:00)
+        if (hour < endHour || endHour === 21) {
+          const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+          
+          // Add to booked slots if not already there
+          if (!bookedSlotsByDate[bookingDate].includes(timeSlot)) {
+            bookedSlotsByDate[bookingDate].push(timeSlot);
+            console.log(`Marking as booked: ${bookingDate} ${timeSlot}`);
+          }
         }
       }
     }
@@ -218,9 +218,6 @@ const processBookingsData = (bookings: BookingData[]) => {
     }
   }
   
-  console.log("Booked slots by date:", bookedSlotsByDate);
-  console.log("Fully booked dates:", fullyBooked);
-  
   setBookedSlots(bookedSlotsByDate);
   setFullyBookedDates(fullyBooked);
   
@@ -228,44 +225,48 @@ const processBookingsData = (bookings: BookingData[]) => {
   updateTimeSlots(date);
 };
 
-// Updated getAvailableEndTimes to only consider hourly increments
-// Updated getAvailableEndTimes function to correctly limit to 4-hour duration
 const getAvailableEndTimes = () => {
   if (!selectedStartTime) return [];
   
   const startHour = parseInt(selectedStartTime.split(':')[0]);
   
-  // Max duration is 4 hours INCLUSIVE of the start and end hour
-  // So for a 4-hour booking from 1pm, the end time should be 4pm (not 5pm)
-  // This means max end hour is start hour + 3 (4 total hours)
-  const maxDuration = 4; // 4 hour maximum
-  const maxEndHour = Math.min(startHour + (maxDuration - 1), 22); // Maximum 10 PM
+  // Max duration is 2 hours EXCLUSIVE of the end hour
+  // So for a 2-hour booking from 9am, the end time should be 11am
+  const maxDuration = 2; // 2 hour maximum
+  const maxEndHour = Math.min(startHour + maxDuration, 21); // Maximum 9 PM
   
   const endTimes = [];
   const bookedForDate = bookedSlots[date] || [];
   
-  // Start from the next hour and include only up to 4 hours total
+  // Start from the next hour and include up to 2 hours total
   for (let hour = startHour + 1; hour <= maxEndHour; hour++) {
     const hourStr = hour.toString().padStart(2, '0');
     const timeSlot = `${hourStr}:00`;
     
-    // Check if this time is booked
-    const isBooked = bookedForDate.includes(timeSlot);
+    // Check if any hour in the range is booked
+    let isRangeBooked = false;
+    for (let checkHour = startHour + 1; checkHour < hour; checkHour++) {
+      const checkSlot = `${checkHour.toString().padStart(2, '0')}:00`;
+      if (bookedForDate.includes(checkSlot)) {
+        isRangeBooked = true;
+        break;
+      }
+    }
     
     // Add to available end times if not booked
-    if (!isBooked) {
+    if (!isRangeBooked) {
       const ampm = hour >= 12 ? 'PM' : 'AM';
       const displayHour = hour > 12 ? hour - 12 : hour;
       
+      // Calculate duration for display
+      const duration = hour - startHour;
+      
       endTimes.push({
         id: timeSlot,
-        label: `${displayHour}:00 ${ampm}`,
+        label: `${displayHour}:00 ${ampm} (${duration} hour${duration !== 1 ? 's' : ''})`,
         value: timeSlot,
         disabled: false
       });
-    } else {
-      // If we hit a booked slot, we can't go beyond this
-      break;
     }
   }
   
@@ -349,6 +350,9 @@ const getAvailableEndTimes = () => {
     if (!room || !selectedStartTime || !selectedEndTime || !bookingTitle) {
       setSuccess(false);
       setMessage("Please fill in all required fields.");
+      
+      // Auto-hide error message after 5 seconds
+      setTimeout(() => setMessage(""), 5000);
       return;
     }
     
@@ -359,6 +363,9 @@ const getAvailableEndTimes = () => {
       if (!userId) {
         setSuccess(false);
         setMessage("You must be logged in to book a room.");
+        
+        // Auto-hide error message after 5 seconds
+        setTimeout(() => setMessage(""), 5000);
         return;
       }
       
@@ -403,6 +410,9 @@ const getAvailableEndTimes = () => {
     } catch (err: any) {
       setSuccess(false);
       setMessage(err.response?.data?.message || "Failed to create booking. Please try again.");
+      
+      // Auto-hide error message after 5 seconds
+      setTimeout(() => setMessage(""), 5000);
     }
   };
 
@@ -462,7 +472,7 @@ const getAvailableEndTimes = () => {
                   </div>
                   <div className="flex-1 flex space-x-2">
                     <div className="flex-1">
-                      <select
+                    <select
                         className="w-full border border-gray-300 rounded-md p-2 text-gray-900"
                         value={selectedStartTime}
                         onChange={handleStartTimeChange}
@@ -485,23 +495,22 @@ const getAvailableEndTimes = () => {
                       <>
                         <div className="pt-2 text-gray-800">to</div>
                         <div className="flex-1">
-                          <select
-                            className="w-full border border-gray-300 rounded-md p-2 text-gray-900"
-                            value={selectedEndTime}
-                            onChange={handleEndTimeChange}
-                            required
-                          >
-                            <option value="">Select end time</option>
-                            {getAvailableEndTimes().map((slot) => (
-                              <option 
-                                key={slot.id} 
-                                value={slot.value}
-                                style={{color: slot.disabled ? '#D1D5DB' : 'inherit'}}
-                              >
-                                {slot.label}
-                              </option>
-                            ))}
-                          </select>
+                        <select
+                          className="w-full border border-gray-300 rounded-md p-2 text-gray-900"
+                          value={selectedEndTime}
+                          onChange={handleEndTimeChange}
+                          required
+                        >
+                          <option value="">Select end time</option>
+                          {getAvailableEndTimes().map((slot) => (
+                            <option 
+                              key={slot.id} 
+                              value={slot.value}
+                            >
+                              {slot.label}
+                            </option>
+                          ))}
+                        </select>
                         </div>
                       </>
                     )}
@@ -514,10 +523,27 @@ const getAvailableEndTimes = () => {
                   </p>
                 )}
                 
+                {/* Add a clear explanation box */}
                 {selectedStartTime && selectedEndTime && (
-                  <p className="mt-1 text-sm text-gray-600">
-                    Duration: {getDurationText(selectedStartTime, selectedEndTime)}
-                  </p>
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded">
+                    <p className="text-sm text-blue-800">
+                      <strong>Booking:</strong> From {
+                        (() => {
+                          const startHour = parseInt(selectedStartTime.split(':')[0]);
+                          const displayStartHour = startHour > 12 ? startHour - 12 : startHour;
+                          const startAmPm = startHour >= 12 ? 'PM' : 'AM';
+                          
+                          const endHour = parseInt(selectedEndTime.split(':')[0]);
+                          const displayEndHour = endHour > 12 ? endHour - 12 : endHour;
+                          const endAmPm = endHour >= 12 ? 'PM' : 'AM';
+                          
+                          return `${displayStartHour}:00 ${startAmPm} to ${displayEndHour}:00 ${endAmPm}`;
+                        })()
+                      }
+                      <br />
+                      <strong>Duration:</strong> {getDurationText(selectedStartTime, selectedEndTime)}
+                    </p>
+                  </div>
                 )}
                 
                 <p className="mt-2 text-xs text-gray-500">
@@ -538,54 +564,30 @@ const getAvailableEndTimes = () => {
               </div>
               
               {message && (
-                <div
-                  className={`flex w-full overflow-hidden rounded-lg shadow-md mb-4 ${
-                    success ? "bg-emerald-50 border border-emerald-500" : "bg-red-50 border border-red-500"
-                  }`}
-                >
-                  <div
-                    className={`flex items-center justify-center w-12 ${
-                      success ? "bg-emerald-500" : "bg-red-500"
-                    }`}
-                  >
-                    <svg
-                      className="w-6 h-6 text-white fill-current"
-                      viewBox="0 0 40 40"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      {success ? (
-                        <path d="M20 3.33331C10.8 3.33331 3.33337 10.8 3.33337 20C3.33337 29.2 10.8 36.6666 20 36.6666C29.2 36.6666 36.6667 29.2 36.6667 20C36.6667 10.8 29.2 3.33331 20 3.33331ZM16.6667 28.3333L8.33337 20L10.6834 17.65L16.6667 23.6166L29.3167 10.9666L31.6667 13.3333L16.6667 28.3333Z" />
-                      ) : (
-                        <path d="M20 3.36667C10.8167 3.36667 3.3667 10.8167 3.3667 20C3.3667 29.1833 10.8167 36.6333 20 36.6333C29.1834 36.6333 36.6334 29.1833 36.6334 20C36.6334 10.8167 29.1834 3.36667 20 3.36667ZM19.1334 33.3333V22.9H13.3334L21.6667 6.66667V17.1H27.25L19.1334 33.3333Z" />
-                      )}
-                    </svg>
-                  </div>
-                  <div className="px-4 py-2 -mx-3 flex justify-between w-full">
-                    <div className="mx-3">
-                      <span
-                        className={`font-semibold ${
-                          success
-                            ? "text-emerald-500"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {success ? "Success" : "Error"}
-                      </span>
-                      <p className="text-sm text-gray-800">
-                        {message}
-                      </p>
+                <div className="fixed top-4 right-4 z-50">
+                  <div className="flex w-full max-w-sm overflow-hidden bg-white rounded-lg shadow-md dark:bg-gray-800">
+                    <div className={`flex items-center justify-center w-12 ${success ? "bg-emerald-500" : "bg-red-500"}`}>
+                      <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                        {success ? (
+                          <path d="M20 3.33331C10.8 3.33331 3.33337 10.8 3.33337 20C3.33337 29.2 10.8 36.6666 20 36.6666C29.2 36.6666 36.6667 29.2 36.6667 20C36.6667 10.8 29.2 3.33331 20 3.33331ZM16.6667 28.3333L8.33337 20L10.6834 17.65L16.6667 23.6166L29.3167 10.9666L31.6667 13.3333L16.6667 28.3333Z" />
+                        ) : (
+                          <path d="M20 3.36667C10.8167 3.36667 3.3667 10.8167 3.3667 20C3.3667 29.1833 10.8167 36.6333 20 36.6333C29.1834 36.6333 36.6334 29.1833 36.6334 20C36.6334 10.8167 29.1834 3.36667 20 3.36667ZM19.1334 33.3333V22.9H13.3334L21.6667 6.66667V17.1H27.25L19.1334 33.3333Z" />
+                        )}
+                      </svg>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setMessage("")}
-                      className="text-gray-600 hover:text-gray-800 font-bold"
-                    >
-                      ✖
-                    </button>
+                    <div className="px-4 py-2 -mx-3">
+                      <div className="mx-3">
+                        <span className={`font-semibold ${success ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                          {success ? "Success" : "Error"}
+                        </span>
+                        <p className="text-sm text-gray-600 dark:text-gray-200">
+                          {message}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
-              
               <div className="flex justify-between">
                 <button
                   type="submit"
@@ -595,7 +597,15 @@ const getAvailableEndTimes = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={() => {
+                    // Reset form state
+                    setSelectedStartTime("");
+                    setSelectedEndTime("");
+                    setBookingTitle("");
+                    setMessage("");
+                    // Close the modal
+                    onClose();
+                  }}
                   className="px-5 py-2 bg-gray-500 text-white font-medium rounded hover:bg-gray-600 transition-colors"
                 >
                   Cancel
