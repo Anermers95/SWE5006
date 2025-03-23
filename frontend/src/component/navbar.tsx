@@ -1,21 +1,25 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { isTokenValid } from "../security/ProtectedRoute";
 
 const Navbar: React.FC = () => {
-  const [loggedIn, setLoggedIn] = React.useState(false);
-
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   // Run when the localStorage changes
   useEffect(() => {
     if (sessionStorage.getItem("user")) {
+      const userData = JSON.parse(sessionStorage.getItem("user") || "{}");
       const token = JSON.parse(sessionStorage.getItem("user") || "").token;
       if(isTokenValid(token))
       {
         setLoggedIn(true);
+        setIsAdmin(userData.role_id === 1);
       } else {
         setLoggedIn(false);
+        setIsAdmin(false);
       }
     } else {
       setLoggedIn(false);
+      setIsAdmin(false);
     }
   }, [sessionStorage.getItem("user")]);
 
@@ -79,12 +83,23 @@ const Navbar: React.FC = () => {
               >
                 Book Room
               </a>
-              <a
-                className="my-2 text-gray-700 dark:text-gray-200 hover:text-blue-500 md:mx-4 md:my-0"
-                href="/room"
-              >
-                Manage Room
-              </a>
+              
+                {isAdmin && (
+                <a
+                  className="my-2 text-gray-700 dark:text-gray-200 hover:text-blue-500 md:mx-4 md:my-0"
+                  href="/room"
+                >
+                  Manage Room
+                </a>
+                )}
+                {isAdmin && (
+                <a
+                  className="my-2 text-gray-700 dark:text-gray-200 hover:text-blue-500 md:mx-4 md:my-0"
+                  href="/analytics"
+                >
+                  Manage Analytics
+                </a>
+                )}
               <a
                 className="my-2 text-gray-700 dark:text-gray-200 hover:text-blue-500 md:mx-4 md:my-0"
                 href="#"

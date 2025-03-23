@@ -100,7 +100,8 @@ const RoomListings = () => {
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ message: string; success: boolean } | null>(null);
-
+  const [isStudent, setIsStudent] = useState<boolean>(false);
+  const [availableRoomTypes, setAvailableRoomTypes] = useState<string[]>([]);
   // Sample image for rooms that don't have one
   const defaultRoomImage = "https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=800&amp;q=80";
   
@@ -121,16 +122,29 @@ const RoomListings = () => {
   // Fetch rooms and bookings from API
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
-
+  
     if (storedUser) {
       const user = JSON.parse(storedUser);
       setUser(user);
+      console.log("current user", user)
+      // Check if user is a student (user_role_id = 2)
+      const userIsStudent = user.role_id === 2;
+      setIsStudent(userIsStudent);
+      console.log("user is student", userIsStudent)
+      // If user is a student, they can only see discussion rooms
+      if (userIsStudent) {
+        setAvailableRoomTypes(['Discussion Room']);
+        setFilterType('Discussion Room'); // Auto-select discussion room filter for students
+      } else {
+        // For non-students, all room types are available
+        setAvailableRoomTypes([]);
+      }
     } else {
       // Redirect to login if needed
       window.location.href = "/login";
       return;
     }
-
+  
     fetchRooms();
     fetchBookings();
   }, [bookingSuccess]); // Refetch rooms when a booking is successful
@@ -144,7 +158,14 @@ const RoomListings = () => {
       
       if (response.data && Array.isArray(response.data)) {
         // Filter rooms that are active (is_active is true)
-        const activeRooms = response.data.filter(room => room.is_active === true);
+        let activeRooms = response.data.filter(room => room.is_active === true);
+        
+        // If user is a student, filter to only show discussion rooms
+        if (isStudent) {
+          activeRooms = activeRooms.filter(room => room.room_type.toLowerCase() === 'discussion room');
+          console.log(`Student user: Filtered to ${activeRooms.length} discussion rooms`);
+        }
+        
         setRooms(activeRooms);
         
         // Log the number of active rooms found
@@ -372,14 +393,25 @@ const RoomListings = () => {
       <div className="flex justify-end">
         <Navbar />
       </div>
-
+  
       {/* Main content container with white background and rounded corners */}
       <div className="container mx-auto px-4 py-6">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-semibold text-gray-800">Room Directory</h1>
-            <p className="text-gray-600 mt-2">Browse and book available rooms across campus</p>
+            <p className="text-gray-600 mt-2">
+              {isStudent 
+                ? "Browse and book available discussion rooms for your study sessions" 
+                : "Browse and book available rooms across campus"}
+            </p>
+            
+            {/* Student Access Notification */}
+            {isStudent && (
+              <div className="mt-3 p-2 bg-blue-50 border border-blue-100 rounded text-blue-700">
+                <strong>Student Access:</strong> As a student, you can book discussion rooms for your study sessions.
+              </div>
+            )}
             
             {/* Notification */}
             {notification && (
@@ -390,28 +422,34 @@ const RoomListings = () => {
               />
             )}
           </div>
-
+  
           {/* Filters Section */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h2 className="font-medium text-lg mb-4 text-gray-900">Filters</h2>
             
             {/* Room Properties Filters */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {/* Room Type Filter */}
+              {/* Room Type Filter - Only shown to non-students or modified for students */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">Room Type</label>
-                <select
-                  className="w-full border border-gray-300 rounded-md p-2 text-gray-900 bg-white"
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                >
-                  <option value="">All Types</option>
-                  {uniqueTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                {isStudent ? (
+                  <div className="w-full border border-gray-300 rounded-md p-2 text-gray-600 bg-gray-100">
+                    Discussion Room (Student Access)
+                  </div>
+                ) : (
+                  <select
+                    className="w-full border border-gray-300 rounded-md p-2 text-gray-900 bg-white"
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                  >
+                    <option value="">All Types</option>
+                    {uniqueTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-
+  
               {/* Capacity Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">Minimum Capacity</label>
@@ -428,7 +466,7 @@ const RoomListings = () => {
                   <option value="100">100+ People</option>
                 </select>
               </div>
-
+  
               {/* Building Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1">Building</label>
@@ -467,7 +505,7 @@ const RoomListings = () => {
                     </div>
                   </div>
                 </div>
-
+  
                 {/* Start Time Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-1">Start Time</label>
@@ -480,7 +518,7 @@ const RoomListings = () => {
                     {generateTimeOptions()}
                   </select>
                 </div>
-
+  
                 {/* End Time Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-1">End Time</label>
@@ -496,7 +534,7 @@ const RoomListings = () => {
                     )}
                   </select>
                 </div>
-
+  
                 {/* Clear Filters Button */}
                 <div className="flex items-end">
                   <button 
@@ -518,7 +556,7 @@ const RoomListings = () => {
               )}
             </div>
           </div>
-
+  
           {/* Room Listings */}
           {loading ? (
             <div className="text-center py-12">
@@ -532,7 +570,12 @@ const RoomListings = () => {
             </div>
           ) : (
             <>
-              <p className="mb-4 text-gray-600">Showing {filteredRooms.length} out of {rooms.length} rooms</p>
+              <p className="mb-4 text-gray-600">
+                {isStudent 
+                  ? `Showing ${filteredRooms.length} available discussion ${filteredRooms.length === 1 ? 'room' : 'rooms'}`
+                  : `Showing ${filteredRooms.length} out of ${rooms.length} rooms`
+                }
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRooms.map((room) => (
                   <div key={room.room_id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
@@ -581,12 +624,7 @@ const RoomListings = () => {
                         )}
                         
                         <div className="mt-auto pt-4 flex space-x-2">
-                          <button
-                            onClick={() => handleViewDetails(room.room_id)}
-                            className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition duration-150"
-                          >
-                            View Details
-                          </button>
+                          
                           <button
                             onClick={() => handleBookRoom(room.room_id)}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150"

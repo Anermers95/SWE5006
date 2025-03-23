@@ -33,13 +33,12 @@ interface TimeSlot {
   disabled: boolean;
 }
 
-// Updated to match hourly calculation with inclusive hours
 const getDurationText = (startTime: string, endTime: string): string => {
   const startHour = parseInt(startTime.split(':')[0]);
   const endHour = parseInt(endTime.split(':')[0]);
   
-  // Calculate hours accounting for an inclusive end time
-  const hours = endHour - startHour + 1;
+  // Calculate hours
+  const hours = endHour - startHour;
   
   return `${hours} hour${hours !== 1 ? 's' : ''}`;
 };
@@ -109,10 +108,10 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
     }
   };
   
-  // Generate time slots from 8 AM to 10 PM (hourly only)
+  // Generate time slots from 9 AM to 9 PM (hourly only)
   const generateTimeSlots = () => {
     const slots: TimeSlot[] = [];
-    for (let hour = 8; hour <= 22; hour++) {
+    for (let hour = 9; hour <= 21; hour++) {
       const hourStr = hour.toString().padStart(2, '0');
       const ampm = hour >= 12 ? 'PM' : 'AM';
       const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
@@ -127,7 +126,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
     return slots;
   };
   
-  // Fetch booked time slots
+  // Updated fetchBookedSlots function with special handling for 9pm end time
   const fetchBookedSlots = async (selectedDate: string) => {
     try {
       // Get all bookings
@@ -153,17 +152,34 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
         
         console.log(`Processing booking: ${startHour}:00 - ${endHour}:00`);
         
-        // Mark every hour from start time to end time as booked (inclusive)
-        for (let hour = startHour; hour <= endHour; hour++) {
-          // Only add slots within our 8 AM to 10 PM range
-          if (hour >= 8 && hour <= 22) {
+        // Mark start time as booked
+        if (startHour >= 9 && startHour <= 21) {
+          const startSlot = `${startHour.toString().padStart(2, '0')}:00`;
+          if (!bookedTimes.includes(startSlot)) {
+            bookedTimes.push(startSlot);
+            console.log(`Marking start time as booked: ${startSlot}`);
+          }
+        }
+        
+        // Mark all hours between start and end (exclusive of end) as booked
+        for (let hour = startHour + 1; hour < endHour; hour++) {
+          if (hour >= 9 && hour <= 21) {
             const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-            
-            // Add to booked slots if not already there
             if (!bookedTimes.includes(timeSlot)) {
               bookedTimes.push(timeSlot);
-              console.log(`Marking as booked: ${timeSlot}`);
+              console.log(`Marking intermediate hour as booked: ${timeSlot}`);
             }
+          }
+        }
+        
+        // Special handling for end time:
+        // 1. If it's 9pm (the last slot of the day), mark it as booked
+        // 2. For all other end times, don't mark them as booked
+        if (endHour === 21 && endHour >= 9 && endHour <= 21) {
+          const endSlot = `${endHour.toString().padStart(2, '0')}:00`;
+          if (!bookedTimes.includes(endSlot)) {
+            bookedTimes.push(endSlot);
+            console.log(`Marking end time as booked (9pm special case): ${endSlot}`);
           }
         }
       });
@@ -174,7 +190,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
       const slots = generateTimeSlots();
       setTimeSlots(slots.map(slot => ({
         ...slot,
-        disabled: bookedTimes.includes(slot.value)
+        disabled: bookedTimes.includes(slot.value) && slot.value !== selectedStartTime
       })));
       
     } catch (err) {
@@ -206,15 +222,16 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
     setSelectedEndTime(endTime);
   };
   
-  // Updated to match the booking modal's hourly approach
+  // Updated getAvailableEndTimes function with special handling for 9pm end time
   const getAvailableEndTimes = () => {
     if (!selectedStartTime) return [];
     
     const startHour = parseInt(selectedStartTime.split(':')[0]);
     
-    // For a 4-hour booking starting at 1pm, the end time should be 4pm
-    // This means the maximum end hour is startHour + 3
-    const maxEndHour = Math.min(startHour + 3, 22); // 4-hour maximum (inclusive), limited to 10 PM
+    // Max duration is 2 hours
+    const maxDuration = 2;
+    // Maximum end hour is either startHour + maxDuration or 21 (9 PM), whichever is smaller
+    const maxEndHour = Math.min(startHour + maxDuration, 21);
     
     const endTimes = [];
     
@@ -223,23 +240,40 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
       const hourStr = hour.toString().padStart(2, '0');
       const timeSlot = `${hourStr}:00`;
       
-      // Check if this time is booked
-      const isBooked = bookedSlots.includes(timeSlot);
+      // Check if this specific hour is booked (except for 9pm which gets special handling)
+      const isBooked = bookedSlots.includes(timeSlot) && hour < 21;
       
-      // Add to available end times if not booked
-      if (!isBooked) {
+      // Special handling for 9pm - if we're trying to book 7pm-9pm or 8pm-9pm
+      // Check if 9pm is already booked
+      const is9pmBooked = hour === 21 && bookedSlots.includes('21:00');
+      
+      // Check if any hour in the range is booked (for intermediate hours)
+      let isRangeBooked = false;
+      for (let checkHour = startHour + 1; checkHour < hour; checkHour++) {
+        const checkSlot = `${checkHour.toString().padStart(2, '0')}:00`;
+        if (bookedSlots.includes(checkSlot)) {
+          isRangeBooked = true;
+          break;
+        }
+      }
+      
+      // Special handling for the original booking's end time
+      const isOriginalEndTime = timeSlot === selectedEndTime && hour === parseInt(selectedEndTime.split(':')[0]);
+      
+      // Add to available end times if not booked and range is clear
+      if ((!isBooked && !isRangeBooked && !is9pmBooked) || isOriginalEndTime) {
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour > 12 ? hour - 12 : hour;
         
+        // Calculate duration for display
+        const duration = hour - startHour;
+        
         endTimes.push({
           id: timeSlot,
-          label: `${displayHour}:00 ${ampm}`,
+          label: `${displayHour}:00 ${ampm} (${duration} hour${duration !== 1 ? 's' : ''})`,
           value: timeSlot,
           disabled: false
         });
-      } else {
-        // If we hit a booked slot, we can't go beyond this
-        break;
       }
     }
     
@@ -450,7 +484,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
                 </p>
                 
                 <p className="mt-2 text-xs text-gray-500">
-                  Note: Time slots that are already booked will appear grayed out and cannot be selected.
+                  Note: Bookings are limited to 2 hours maximum. Time slots that are already booked will appear grayed out and cannot be selected.
                 </p>
               </div>
               
@@ -467,50 +501,27 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
               </div>
               
               {message && (
-                <div
-                  className={`flex w-full overflow-hidden rounded-lg shadow-md mb-4 ${
-                    success ? "bg-emerald-50 border border-emerald-500" : "bg-red-50 border border-red-500"
-                  }`}
-                >
-                  <div
-                    className={`flex items-center justify-center w-12 ${
-                      success ? "bg-emerald-500" : "bg-red-500"
-                    }`}
-                  >
-                    <svg
-                      className="w-6 h-6 text-white fill-current"
-                      viewBox="0 0 40 40"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      {success ? (
-                        <path d="M20 3.33331C10.8 3.33331 3.33337 10.8 3.33337 20C3.33337 29.2 10.8 36.6666 20 36.6666C29.2 36.6666 36.6667 29.2 36.6667 20C36.6667 10.8 29.2 3.33331 20 3.33331ZM16.6667 28.3333L8.33337 20L10.6834 17.65L16.6667 23.6166L29.3167 10.9666L31.6667 13.3333L16.6667 28.3333Z" />
-                      ) : (
-                        <path d="M20 3.36667C10.8167 3.36667 3.3667 10.8167 3.3667 20C3.3667 29.1833 10.8167 36.6333 20 36.6333C29.1834 36.6333 36.6334 29.1833 36.6334 20C36.6334 10.8167 29.1834 3.36667 20 3.36667ZM19.1334 33.3333V22.9H13.3334L21.6667 6.66667V17.1H27.25L19.1334 33.3333Z" />
-                      )}
-                    </svg>
-                  </div>
-                  <div className="px-4 py-2 -mx-3 flex justify-between w-full">
-                    <div className="mx-3">
-                      <span
-                        className={`font-semibold ${
-                          success
-                            ? "text-emerald-500"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {success ? "Success" : "Error"}
-                      </span>
-                      <p className="text-sm text-gray-800">
-                        {message}
-                      </p>
+                <div className="fixed top-4 right-4 z-50">
+                  <div className="flex w-full max-w-sm overflow-hidden bg-white rounded-lg shadow-md dark:bg-gray-800">
+                    <div className={`flex items-center justify-center w-12 ${success ? "bg-emerald-500" : "bg-red-500"}`}>
+                      <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                        {success ? (
+                          <path d="M20 3.33331C10.8 3.33331 3.33337 10.8 3.33337 20C3.33337 29.2 10.8 36.6666 20 36.6666C29.2 36.6666 36.6667 29.2 36.6667 20C36.6667 10.8 29.2 3.33331 20 3.33331ZM16.6667 28.3333L8.33337 20L10.6834 17.65L16.6667 23.6166L29.3167 10.9666L31.6667 13.3333L16.6667 28.3333Z" />
+                        ) : (
+                          <path d="M20 3.36667C10.8167 3.36667 3.3667 10.8167 3.3667 20C3.3667 29.1833 10.8167 36.6333 20 36.6333C29.1834 36.6333 36.6334 29.1833 36.6334 20C36.6334 10.8167 29.1834 3.36667 20 3.36667ZM19.1334 33.3333V22.9H13.3334L21.6667 6.66667V17.1H27.25L19.1334 33.3333Z" />
+                        )}
+                      </svg>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setMessage("")}
-                      className="text-gray-600 hover:text-gray-800 font-bold"
-                    >
-                      ✖
-                    </button>
+                    <div className="px-4 py-2 -mx-3">
+                      <div className="mx-3">
+                        <span className={`font-semibold ${success ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                          {success ? "Success" : "Error"}
+                        </span>
+                        <p className="text-sm text-gray-600 dark:text-gray-200">
+                          {message}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
