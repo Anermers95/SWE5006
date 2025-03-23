@@ -624,12 +624,7 @@ const RoomListings = () => {
                         )}
                         
                         <div className="mt-auto pt-4 flex space-x-2">
-                          <button
-                            onClick={() => handleViewDetails(room.room_id)}
-                            className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition duration-150"
-                          >
-                            View Details
-                          </button>
+                          
                           <button
                             onClick={() => handleBookRoom(room.room_id)}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150"
