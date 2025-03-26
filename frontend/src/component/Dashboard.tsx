@@ -7,6 +7,7 @@ interface Booking {
   booking_id: number;
   room_id: number;
   user_id: number;
+  user_full_name: string;
   booking_date?: string;
   start_time: string;
   end_time: string;
@@ -102,16 +103,17 @@ const Dashboard = () => {
     }
   };
 
-  // Convert from UTC 0 to singapore date
   const DateConversion = (date: string) => {
-    const dateObj = new Date(date);
-    return dateObj
-      .toLocaleDateString("en-GB", {
-        timeZone: "Asia/Singapore",
-      })
-      .replace(/\//g, "-");
+    if (!date) return "";
+    
+    // Extract just the date part from the ISO string (YYYY-MM-DD)
+    // This will give us the date as entered by the user during booking
+    const bookingDate = date.split('T')[0];
+    const [year, month, day] = bookingDate.split('-');
+    
+    // Format in the DD-MM-YYYY format
+    return `${day}-${month}-${year}`;
   };
-
   const TimeConversion = (date: string) => {
     const dateObj = new Date(date);
     return dateObj.toLocaleTimeString("en-GB", {
@@ -251,7 +253,7 @@ const Dashboard = () => {
           <div className="w-[90%] p-6 bg-white rounded-lg shadow-md">
             {/* Page Header */}
             <h1 className="text-3xl font-semibold text-gray-800">
-              Welcome {user.role_id === 1 ? "Admin" : "User"}
+              Welcome {user.role_id === 1 ? "Admin" : user.full_name}
             </h1>
             <br />
             <h3 className="text-3xl font-semibold text-gray-800">
@@ -311,7 +313,7 @@ const Dashboard = () => {
                     </p>
                     {activeTab === 'upcoming' && (
                       <button
-                        onClick={() => window.location.href = "/rooms"}
+                        onClick={() => window.location.href = "/book"}
                         className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-150"
                       >
                         Browse Available Rooms

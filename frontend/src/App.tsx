@@ -7,7 +7,7 @@ import Dashboard from './component/Dashboard'
 import RoomListings from './component/BookRoom'
 import RoomManagement from './component/RoomManagement'
 import RoomForm from './component/RoomForm'
-
+import Analytics from './component/analytics'
 //ProtectedRoute
 import ProtectedRoute from './security/ProtectedRoute'
 
@@ -26,8 +26,7 @@ function App() {
         <Route path="/room" element={<RoomManagement />} />
         <Route path="/room/create" element={<RoomForm />} />
         <Route path="/room/update/:id" element={<RoomForm />} />
-
-        
+        <Route path="/analytics" element={<Analytics />} />
 
 
 
