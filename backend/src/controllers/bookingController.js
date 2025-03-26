@@ -1,6 +1,37 @@
 const bookingModel = require('../models/bookingModel');
+const nodemailer = require('nodemailer');
 const roomModel = require('../models/roomModel');
-const userModel = require('../models/userModel'); // Assuming you have a userModel
+const userModel = require('../models/userModel');
+
+
+// Configure Nodemailer transporter
+const transporter = nodemailer.createTransport({
+    host: process.env.GMAIL_HOST,
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS
+    }
+});
+
+// Function to send booking confirmation email
+const sendBookingEmail = async (userEmail, bookingDetails) => {
+    const mailOptions = {
+        from: process.env.GMAIL_USER,
+        to: userEmail,
+        subject: 'Room Booking Confirmation',
+        text: `Hello, \n\nYour booking has been confirmed:\n\nRoom: ${bookingDetails.roomId}\nStart Time: ${bookingDetails.startTime}\nEnd Time: ${bookingDetails.endTime}\nPurpose: ${bookingDetails.bookingPurpose}\n\nThank you!`
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Booking confirmation email sent to', userEmail);
+    } catch (error) {
+        console.error('Error sending email:', error);
+    }
+};
+
 
 // Get all bookings
 const getAllBookings = async (req, res) => {
@@ -79,10 +110,10 @@ const createBooking = async (req, res) => {
         }
         
         // Check if user exists (assuming you have a userModel)
-        // const user = await userModel.getById(userId);
-        // if (!user) {
-        //     return res.status(404).json({ message: 'User not found' });
-        // }
+        const user = await userModel.getById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
         
         // Check for booking conflicts
         const hasConflict = await bookingModel.checkConflict(roomId, startTime, endTime);
@@ -98,7 +129,18 @@ const createBooking = async (req, res) => {
             endTime, 
             bookingPurpose
         });
+
+        // Now send the confirmation email
+        const bookingDetails = {
+            roomId: room.room_name, // Assuming 'name' is a field in the roomModel
+            startTime,
+            endTime,
+            bookingPurpose
+        };
         
+        // Send confirmation email
+        await sendBookingEmail(user.user_email, bookingDetails);
+
         res.status(201).json({ 
             message: 'Booking created successfully', 
             booking: newBooking 
@@ -108,6 +150,7 @@ const createBooking = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 
 // Update booking
 const updateBooking = async (req, res) => {
