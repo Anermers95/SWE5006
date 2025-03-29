@@ -196,7 +196,7 @@ const RoomList = () => {
                                 <p className="mb-4 text-gray-600">Showing {filteredRooms.length} out of {rooms.length} rooms</p>
                                 <button
                                     onClick={navigateCreateRoom}
-                                    className="flex-1 bg-blue-500 hover:bg-blue-400 text-white font-medium py-2 px-4 rounded transition duration-150 rounded-half"
+                                    className="flex-1 font-medium py-2 px-4 rounded transition duration-150"
                                 >
                                     Add Room
                                 </button>
@@ -249,11 +249,11 @@ const RoomList = () => {
                                                 <div className="mt-auto pt-4 flex space-x-2">
                                                     <button
                                                         onClick={() => handleViewDetails(room.room_id)}
-                                                        className="flex-1 bg-blue-500 text-white font-medium py-2 px-4 rounded transition duration-150 rounded-half"
+                                                        className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition duration-150"
                                                     >
                                                         Update Room
                                                     </button>
-                                                    <button  className="flex-1 bg-red-500 text-white font-medium py-2 px-4 rounded transition duration-150 rounded-half"
+                                                    <button  className="flex-no-shrink bg-red-500 px-5 ml-4 py-2 text-sm shadow-sm hover:shadow-lg font-medium tracking-wider border-2 border-red-500 text-white rounded-full"
                                                     onClick={() => handleDelete(room.room_id)}>Delete</button>
 
                                                 </div>
