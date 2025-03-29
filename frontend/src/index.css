@@ -71,3 +71,7 @@ button:focus-visible {
 .bg-blue-500 {
   background-color: #3b82f6 !important;
 }
+
+.bg-red-500 {
+  background-color: #f63b3b !important;
+}
