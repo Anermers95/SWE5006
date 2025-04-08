@@ -1,16 +1,112 @@
-name: Build and Test Docker Compose
+# name: Build and Test Docker Compose
+
+# on:
+#   push:
+#     branches:
+#       - release  
+
+# jobs:
+#   build-and-test:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Check out the code
+#         uses: actions/checkout@v2
+
+#       - name: Set up Docker
+#         uses: docker/setup-buildx-action@v2
+
+#       - name: Set up Docker Compose
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y docker-compose
+
+#       - name: Log in to Docker Hub
+#         uses: docker/login-action@v2
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }} 
+#           password: ${{ secrets.DOCKERHUB_TOKEN }} 
+
+#       - name: Build and run Docker Compose
+#         run: |
+#           docker-compose -f docker-compose.yml up -d --build
+#           docker-compose logs
+#           echo "Waiting for AWS connection..."
+          
+#           MAX_RETRIES=12  # Waits up to 60 seconds (12 retries * 5 seconds)
+#           RETRY_COUNT=0
+
+#           while ! docker-compose logs | grep -q "Connected to PostgreSQL"; do
+#             if docker-compose logs | grep -q "Database connection error"; then
+#               echo "❌ Database connection failed. Stopping GitHub Actions."
+#               exit 1  # This will stop GitHub Actions with a failure
+#             fi
+
+#             if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+#               echo "❌ Timed out waiting for AWS connection. Stopping GitHub Actions."
+#               exit 1
+#             fi
+
+#             echo "⏳ Waiting for AWS connection... (Attempt $((RETRY_COUNT+1))/$MAX_RETRIES)"
+#             sleep 5
+#             RETRY_COUNT=$((RETRY_COUNT+1))
+#           done
+
+#           echo "✅ AWS connection established."
+
+
+#       - name: Push Docker images to Docker Hub
+#         run: |
+#           docker-compose -f docker-compose.yml push
+          
+#       - name: Shut down Docker Compose
+#         run: |
+#           docker-compose down
+    
+#   snyk_scan:
+#     needs: build-and-test
+#     runs-on: ubuntu-latest
+#     steps:   
+#     - name: Run Snyk to check backend Docker image for vulnerabilities
+#       uses: snyk/actions/docker@master
+#       continue-on-error: true
+#       env:
+#         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+#       with:
+#         image: ${{ secrets.DOCKERHUB_USERNAME }}/backend:0.1
+
+#     - name: Run Snyk to check frontend Docker image for vulnerabilities
+#       uses: snyk/actions/docker@master
+#       continue-on-error: true
+#       env:
+#         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+#       with:
+#         image: ${{ secrets.DOCKERHUB_USERNAME }}/frontend:0.1
+
+#     - name: Delete frontend image from Docker Hub
+#       run: |
+#         IMAGE_NAME="vinetage/frontend"
+#         TAG="0.1"
+#         curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
+#              -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
+
+#     - name: Delete backend image from Docker Hub
+#       run: |
+#         IMAGE_NAME="vinetage/backend"
+#         TAG="0.1"
+#         curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
+#              -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
+
+name: Build, Test and Deploy to EC2
 
 on:
   push:
     branches:
-      - release  # branch for the release (Runs when the code is merged into release)
-  # pull_request:
-  #   branches:
-  #     - release  # trigger on PR to the release branch
+      - release
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest  # Ubuntu for now can change to different one
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out the code
@@ -27,80 +123,88 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}  # Add your Docker Hub username to GitHub Secrets
-          password: ${{ secrets.DOCKERHUB_TOKEN }}  # Add your Docker Hub token to GitHub Secrets
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and run Docker Compose
         run: |
           docker-compose -f docker-compose.yml up -d --build
           docker-compose logs
-          echo "Waiting for AWS connection..."
-          
-          MAX_RETRIES=12  # Waits up to 60 seconds (12 retries * 5 seconds)
-          RETRY_COUNT=0
-
-          while ! docker-compose logs | grep -q "Connected to PostgreSQL"; do
-            if docker-compose logs | grep -q "Database connection error"; then
-              echo "❌ Database connection failed. Stopping GitHub Actions."
-              exit 1  # This will stop GitHub Actions with a failure
-            fi
-
-            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-              echo "❌ Timed out waiting for AWS connection. Stopping GitHub Actions."
-              exit 1
-            fi
-
-            echo "⏳ Waiting for AWS connection... (Attempt $((RETRY_COUNT+1))/$MAX_RETRIES)"
-            sleep 5
-            RETRY_COUNT=$((RETRY_COUNT+1))
-          done
-
-          echo "✅ AWS connection established."
-
 
       - name: Push Docker images to Docker Hub
         run: |
           docker-compose -f docker-compose.yml push
 
-      # - name: Run tests
-      #   run: |
-      #     # Replace this with your actual test command (e.g., inside the container)
-      #     docker-compose exec <your-service-name> npm run test
-          
       - name: Shut down Docker Compose
-        run: |
-          docker-compose down
-    
-  snyk_scan:
-    needs: build-and-test  # Runs after successful build and test
+        run: docker-compose down
+
+  deploy-to-ec2:
+    needs: build-and-test
     runs-on: ubuntu-latest
-    steps:   
-    - name: Run Snyk to check backend Docker image for vulnerabilities
-      uses: snyk/actions/docker@master
-      continue-on-error: true
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        image: ${{ secrets.DOCKERHUB_USERNAME }}/backend:0.1
+    environment:
+      name: ec2-deploy  # Add reviewers in GitHub UI for manual approval
+    steps:
+      - name: Set up AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
 
-    - name: Run Snyk to check frontend Docker image for vulnerabilities
-      uses: snyk/actions/docker@master
-      continue-on-error: true
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        image: ${{ secrets.DOCKERHUB_USERNAME }}/frontend:0.1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Delete frontend image from Docker Hub
-      run: |
-        IMAGE_NAME="vinetage/frontend"
-        TAG="0.1"
-        curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
-             -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
+      - name: Launch EC2 Instance
+        id: launch
+        run: |
+          AMI_ID=$(aws ec2 describe-images --owners amazon \
+            --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*" \
+            --query 'Images[*].[ImageId,CreationDate]' \
+            --output text | sort -k2 -r | head -n1 | awk '{print $1}')
 
-    - name: Delete backend image from Docker Hub
-      run: |
-        IMAGE_NAME="vinetage/backend"
-        TAG="0.1"
-        curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
-             -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id $AMI_ID \
+            --instance-type t2.micro \
+            --key-name ${{ secrets.EC2_KEY_PAIR_NAME }} \
+            --security-groups default \
+            --query 'Instances[0].InstanceId' \
+            --output text)
+
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
+
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
+      - name: Save PEM file
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_PEM_FILE }}" > ~/.ssh/ec2-key.pem
+          chmod 600 ~/.ssh/ec2-key.pem
+
+      - name: Wait for EC2 to be reachable
+        run: |
+          echo "Waiting for SSH at $PUBLIC_IP..."
+          for i in {1..15}; do
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP 'echo ready' && break
+            echo "Retrying SSH..."
+            sleep 10
+          done
+
+      - name: Deploy app on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
+            sudo apt update
+            sudo apt install -y docker.io docker-compose git
+            git clone https://github.com/${{ github.repository }} app
+            cd app
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            docker-compose pull
+            docker-compose up -d --build
+          EOF
