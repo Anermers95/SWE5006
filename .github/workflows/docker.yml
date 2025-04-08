@@ -196,7 +196,12 @@ jobs:
             echo "Retrying SSH..."
             sleep 10
           done
-
+      - name: Set up Docker permissions
+          run: |
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
+            sudo usermod -aG docker ubuntu
+          # Optional: reboot to apply group change OR just use sudo docker
+      EOF
       - name: Deploy app on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
@@ -207,4 +212,4 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             docker-compose pull
             docker-compose up -d --build
-          EOF
+      EOF
