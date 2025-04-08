@@ -196,16 +196,12 @@ jobs:
             echo "Retrying SSH..."
             sleep 10
           done
-      - name: Set up Docker permissions
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
-            sudo usermod -aG docker ubuntu
-          EOF
       - name: Deploy app on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
             sudo apt update
             sudo apt install -y docker.io docker-compose git
+            sudo usermod -aG docker ubuntu
             git clone https://${{ secrets.GH_DEPLOY_TOKEN }}@github.com/${{ github.repository }} app
             cd app
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
