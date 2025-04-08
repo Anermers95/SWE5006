@@ -357,8 +357,8 @@ const Analytics = () => {
       const end = new Date(booking.end_time);
 
       const day = (start.getUTCDay() + 6) % 7;
-      const startHour = start.getUTCHours() +1;
-      const endHour = end.getUTCHours() +1;
+      const startHour = start.getUTCHours() ;
+      const endHour = end.getUTCHours() ;
       
       if (day >= 0 && day < 7) {
         weekdayCounts[day]++;
