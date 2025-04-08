@@ -1,10 +1,11 @@
-import { Link,useNavigate } from "react-router-dom";
+import { Link,useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 
 const RegisterForm = () => {
   const navigate = useNavigate(); // Use navigate hook
-
+  const location = useLocation();
+  const previousPage = location.state?.from || "/home";
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",  // Changed to match the backend field
@@ -90,6 +91,12 @@ const RegisterForm = () => {
           ></div>
           <div className="flex items-center w-full max-w-3xl p-8 mx-auto lg:px-12 lg:w-3/5">
             <div className="w-full">
+            <button
+                onClick={() => navigate(previousPage)}
+                className="mb-4 px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
+              >
+                ← Back
+              </button>
               <h1 className="text-2xl font-semibold tracking-wider text-gray-800 capitalize dark:text-white">
                 Get your free account now.
               </h1>
@@ -181,6 +188,7 @@ const RegisterForm = () => {
                 >
                   {loading ? "Signing up..." : "Sign Up"}
                 </button>
+                
               </form>
 
               <p className="mt-6 text-gray-500 dark:text-gray-400">
