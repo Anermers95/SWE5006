@@ -169,7 +169,7 @@ jobs:
             --image-id $AMI_ID \
             --instance-type t2.micro \
             --key-name ${{ secrets.EC2_KEY_PAIR_NAME }} \
-            --security-groups default \
+            --security-groups launch-wizard-2 \
             --query 'Instances[0].InstanceId' \
             --output text)
 
