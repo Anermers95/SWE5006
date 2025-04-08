@@ -158,7 +158,7 @@ const RoomListings = () => {
       
       if (response.data && Array.isArray(response.data)) {
         // Filter rooms that are active (is_active is true)
-        let activeRooms = response.data.filter(room => room.is_active === true);
+        let activeRooms = response.data;
         
         // If user is a student, filter to only show discussion rooms
         if (isStudent) {
@@ -308,13 +308,12 @@ const RoomListings = () => {
     return true;
   };
 
-  // Filter rooms based on criteria - only showing active rooms
   const filteredRooms = rooms.filter(room => {
     if (filterType && room.room_type !== filterType) return false;
     if (filterCapacity && room.room_seating_capacity < Number(filterCapacity)) return false;
     if (filterBuilding && room.building_name !== filterBuilding) return false;
     if (!isRoomAvailable(room.room_id)) return false;
-    return room.is_active === true; // Only include active rooms
+    return true; // Show both active and inactive rooms
   });
 
   // Get unique values for filters
@@ -593,9 +592,14 @@ const RoomListings = () => {
                       <div className="p-4 flex-1 flex flex-col">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="text-xl font-semibold text-gray-800">{room.room_name}</h3>
-                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
-                            Available
-                          </span>
+                          {/* Status badge changes based on is_active */}
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          room.is_active 
+                            ? "bg-green-100 text-green-800" 
+                            : "bg-red-100 text-red-800"
+                        }`}>
+                          {room.is_active ? "Available" : "Unavailable"}
+                        </span>
                         </div>
                         
                         <div className="mb-4 space-y-2">
@@ -625,12 +629,17 @@ const RoomListings = () => {
                         
                         <div className="mt-auto pt-4 flex space-x-2">
                           
-                          <button
-                            onClick={() => handleBookRoom(room.room_id)}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150"
-                          >
-                            Book Room
-                          </button>
+                        <button
+                          onClick={() => handleBookRoom(room.room_id)}
+                          className={`flex-1 font-medium py-2 px-4 rounded transition duration-150 ${
+                            room.is_active 
+                              ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                          disabled={!room.is_active}
+                        >
+                          {room.is_active ? "Book Room" : "Unavailable"}
+                        </button>
                         </div>
                       </div>
                     </div>
