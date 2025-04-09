@@ -398,7 +398,7 @@ const RoomListings = () => {
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-gray-800">Room Directory</h1>
+            <h1 className="text-3xl font-semibold text-gray-800">Room Booking</h1>
             <p className="text-gray-600 mt-2">
               {isStudent 
                 ? "Browse and book available discussion rooms for your study sessions" 
