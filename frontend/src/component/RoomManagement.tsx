@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "./navbar";
 import axios from "axios";
-
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface Room {
     room_id: number;
@@ -47,7 +47,7 @@ const RoomList = () => {
 
     const fetchRooms = async () => {
         try {
-            const response = await axios.get("http://localhost:3000/rooms");
+            const response = await axios.get(`${API_URL}/rooms`);
             setRooms(response.data);
             setLoading(false);
         } catch (error) {
@@ -68,7 +68,7 @@ const RoomList = () => {
   // Handle delete room
   const handleDelete = async (roomId: number) => {
 
-    const getRoomWithBookings =  await axios.get(`http://localhost:3000/booking/room/${roomId}/`);
+    const getRoomWithBookings =  await axios.get(`${API_URL}/booking/room/${roomId}/`);
 
     if (getRoomWithBookings.data.length > 0) {
       alert("Cannot delete room with bookings. Please delete the bookings first.");
@@ -80,7 +80,7 @@ const RoomList = () => {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:3000/rooms/${roomId}`);
+      await axios.delete(`${API_URL}/rooms/${roomId}`);
       alert("Room deleted successfully!");
       window.location.href = `/room`;
     } catch (error) {

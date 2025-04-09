@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface Booking {
   booking_id: number;
@@ -98,7 +99,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
     
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:3000/rooms/${booking.room_id}`);
+      const response = await axios.get(`${API_URL}/rooms/${booking.room_id}`);
       setRoom(response.data);
     } catch (err) {
       console.error("Error fetching room details:", err);
@@ -130,7 +131,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
   const fetchBookedSlots = async (selectedDate: string) => {
     try {
       // Get all bookings
-      const response = await axios.get('http://localhost:3000/booking');
+      const response = await axios.get(`${API_URL}/booking`);
       
       // Filter bookings for the selected date, excluding the current booking
       const bookingsForDate = response.data.filter((b: any) => {
@@ -346,7 +347,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
       });
       
       // IMPORTANT: Use camelCase property names to match what your controller expects
-      const response = await axios.put(`http://localhost:3000/booking/${booking.booking_id}`, {
+      const response = await axios.put(`${API_URL}/booking/${booking.booking_id}`, {
         startTime: startDateTime,     // camelCase to match controller
         endTime: endDateTime,         // camelCase to match controller
         bookingPurpose: bookingTitle, // camelCase to match controller

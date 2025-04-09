@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
 import EditBookingModal from "./EditBookingModal";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface Booking {
   booking_id: number;
@@ -54,7 +55,7 @@ const Dashboard = () => {
     setLoading(true);
     try {
       // Get all bookings
-      const response = await axios.get('http://localhost:3000/booking');
+      const response = await axios.get(`${API_URL}/booking`);
       
       if (response.data && Array.isArray(response.data)) {
         // Filter bookings by user_id and active status
@@ -67,7 +68,7 @@ const Dashboard = () => {
         const bookingsWithRoomDetails = await Promise.all(
           userBookings.map(async (booking) => {
             try {
-              const roomResponse = await axios.get(`http://localhost:3000/rooms/${booking.room_id}`);
+              const roomResponse = await axios.get(`${API_URL}/rooms/${booking.room_id}`);
               return {
                 ...booking,
                 room_name: roomResponse.data.room_name,
@@ -177,7 +178,7 @@ const Dashboard = () => {
     try {
       // Call API to delete booking instead of just canceling it
       // Use the DELETE HTTP method to completely remove the booking
-      await axios.delete(`http://localhost:3000/booking/${selectedBooking.booking_id}`);
+      await axios.delete(`${API_URL}/booking/${selectedBooking.booking_id}`);
       
       // Refresh bookings list
       fetchUserBookings(user.user_id);

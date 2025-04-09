@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const RoomForm = () => {
   const navigate = useNavigate(); // Use navigate hook
@@ -23,7 +24,7 @@ const RoomForm = () => {
   // Fetch room details if updating
   useEffect(() => {
     if (id) {
-      axios.get(`http://localhost:3000/rooms/${id}`)
+      axios.get(`${API_URL}/rooms/${id}`)
         .then((response) => {
           const roomUpdateData = {
             roomName: response.data.room_name,
@@ -64,7 +65,7 @@ const RoomForm = () => {
       if (id) {
         // Check if the room name and building name is changed
         if (initialData && (formData.roomName !== initialData.roomName || formData.buildingName !== initialData.buildingName)) {
-          const retriveResponse = await axios.get("http://localhost:3000/rooms");
+          const retriveResponse = await axios.get(`${API_URL}/rooms`);
           console.log(retriveResponse.data.name);
 
           for (let i = 0; i < retriveResponse.data.length; i++) {
@@ -76,13 +77,13 @@ const RoomForm = () => {
         } 
         
         // Update Room
-        await axios.put(`http://localhost:3000/rooms/${id}`, formData);
+        await axios.put(`${API_URL}/rooms/${id}`, formData);
         alert("Room updated successfully!");
         navigate("/room");
 
       } else {
         // Create Room
-        const retriveResponse = await axios.get("http://localhost:3000/rooms");
+        const retriveResponse = await axios.get(`${API_URL}/rooms`);
         console.log(retriveResponse.data.name);
 
         for (let i = 0; i < retriveResponse.data.length; i++) {
@@ -92,7 +93,7 @@ const RoomForm = () => {
           }
         }
 
-        const response = await axios.post("http://localhost:3000/rooms", formData);
+        const response = await axios.post(`${API_URL}/rooms`, formData);
         console.log(response.data);
         alert("Room Created Successful!");
         navigate("/room");
