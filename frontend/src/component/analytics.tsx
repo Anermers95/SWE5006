@@ -581,11 +581,6 @@ const Analytics = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Top Rooms</h3>
-                    <button className="text-gray-400 hover:text-gray-500">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
                   </div>
                   
                   <div>
@@ -627,11 +622,6 @@ const Analytics = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Top Buildings</h3>
-                    <button className="text-gray-400 hover:text-gray-500">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
                   </div>
                   
                   <div>
@@ -673,11 +663,6 @@ const Analytics = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Active Users</h3>
-                    <button className="text-gray-400 hover:text-gray-500">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
                   </div>
                   
                   <div className="flex flex-col items-center">
