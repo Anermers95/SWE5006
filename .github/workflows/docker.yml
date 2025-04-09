@@ -214,7 +214,7 @@ jobs:
             echo "Retrying SSH..."
             sleep 10
           done
-          
+
       - name: Deploy app on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
@@ -227,5 +227,5 @@ jobs:
             cd app
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             docker-compose pull
-            docker-compose up -d --build
+            docker-compose up --build
           EOF
