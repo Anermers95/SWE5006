@@ -218,8 +218,7 @@ jobs:
       - name: Deploy app on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
-            PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-            echo "PUBLIC_IP is: $PUBLIC_IP"  # Debug: Print the PUBLIC_IP value
+            export PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
             sudo apt update
             sudo apt install -y docker.io docker-compose git
             sudo usermod -a -G docker ubuntu
@@ -227,15 +226,10 @@ jobs:
             newgrp docker
             git clone -b release https://${{ secrets.GH_DEPLOY_TOKEN }}@github.com/${{ github.repository }} app
             cd app
-            # Debug: Check if .env file exists
-            ls frontend/.env
-            # Debug: Print current VITE_API_URL value
-            grep VITE_API_URL frontend/.env
-            # Run sed to replace localhost with the public IP
             sed -i 's|VITE_API_URL=http://localhost:3000|VITE_API_URL=http://'"$PUBLIC_IP"':3000|' frontend/.env
-            # Debug: Verify that the .env file has been updated
-            cat frontend/.env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            # docker-compose pull
             docker-compose up -d --build
           EOF
+          
         
