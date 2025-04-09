@@ -228,5 +228,5 @@ jobs:
             sed -i 's|VITE_API_URL=http://localhost:3000|VITE_API_URL=http://'"$PUBLIC_IP"':3000|' app/frontend/.env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             # docker-compose pull
-            docker-compose up --build
+            docker-compose up -d --build
           EOF
