@@ -226,6 +226,6 @@ jobs:
             git clone https://${{ secrets.GH_DEPLOY_TOKEN }}@github.com/${{ github.repository }} app
             cd app
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            docker-compose pull
+            # docker-compose pull
             docker-compose up --build
           EOF
