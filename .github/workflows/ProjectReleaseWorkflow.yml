@@ -98,6 +98,8 @@ jobs:
   deploy-to-ec2:
     # needs: snyk_scan
     runs-on: ubuntu-latest
+    environment:
+      name: EC2_Deployment
     steps:
       - name: Set up AWS CLI
         run: |
