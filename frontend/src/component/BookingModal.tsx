@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -111,7 +112,7 @@ const BookingModal = ({
     
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:3000/rooms/${roomId}`);
+      const response = await axios.get(`${API_URL}/rooms/${roomId}`);
       setRoom(response.data);
     } catch (err) {
       console.error("Error fetching room details:", err);
@@ -127,7 +128,7 @@ const BookingModal = ({
     
     try {
       // Get all bookings
-      const response = await axios.get(`http://localhost:3000/booking`);
+      const response = await axios.get(`${API_URL}/booking`);
       
       // Filter bookings for this room that are not cancelled
       const roomBookings = response.data.filter((booking: BookingData) => 
@@ -386,7 +387,7 @@ const getAvailableEndTimes = () => {
         endDateTime
       });
       
-      const response = await axios.post("http://localhost:3000/booking", {
+      const response = await axios.post(`${API_URL}/booking`, {
         userId,
         roomId: room.room_id,
         startTime: startDateTime,
