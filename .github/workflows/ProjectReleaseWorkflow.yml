@@ -175,10 +175,23 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
             export PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
             sudo apt update
-            sudo apt install -y docker.io docker-compose git
-            sudo usermod -a -G docker ubuntu
-            id ubuntu
+            sudo apt install -y git curl
+
+            # Install Docker
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+
+            # Add Docker group
+            sudo groupadd docker || true
+            sudo usermod -aG docker ubuntu
             newgrp docker
+
+            # Install Docker Compose v2 (CLI plugin)
+            DOCKER_CONFIG=\${DOCKER_CONFIG:-\$HOME/.docker}
+            mkdir -p \$DOCKER_CONFIG/cli-plugins
+            curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 \
+              -o \$DOCKER_CONFIG/cli-plugins/docker-compose
+            chmod +x \$DOCKER_CONFIG/cli-plugins/docker-compose
             git clone -b release https://${{ secrets.GH_DEPLOY_TOKEN }}@github.com/${{ github.repository }} app
             cd app
             sed -i 's|VITE_API_URL=http://localhost:3000|VITE_API_URL=http://'"$PUBLIC_IP"':3000|' frontend/.env
