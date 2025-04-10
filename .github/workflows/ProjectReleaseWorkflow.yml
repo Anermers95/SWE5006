@@ -5,98 +5,98 @@ on:
       - release  
 
 jobs:
-  # build-and-test:
-  #   runs-on: ubuntu-latest
+  build-and-test:
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: Check out the code
-  #       uses: actions/checkout@v2
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
 
-  #     - name: Set up Docker
-  #       uses: docker/setup-buildx-action@v2
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
 
-  #     - name: Set up Docker Compose
-  #       run: |
-  #         sudo apt-get update
-  #         sudo apt-get install -y docker-compose
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
 
-  #     - name: Log in to Docker Hub
-  #       uses: docker/login-action@v2
-  #       with:
-  #         username: ${{ secrets.DOCKERHUB_USERNAME }} 
-  #         password: ${{ secrets.DOCKERHUB_TOKEN }} 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }} 
+          password: ${{ secrets.DOCKERHUB_TOKEN }} 
 
-  #     - name: Build and run Docker Compose
-  #       run: |
-  #         docker-compose -f docker-compose.yml up -d --build
-  #         docker-compose logs
-  #         echo "Waiting for AWS connection..."
+      - name: Build and run Docker Compose
+        run: |
+          docker-compose -f docker-compose.yml up -d --build
+          docker-compose logs
+          echo "Waiting for AWS connection..."
           
-  #         MAX_RETRIES=12  # Waits up to 60 seconds (12 retries * 5 seconds)
-  #         RETRY_COUNT=0
+          MAX_RETRIES=12  # Waits up to 60 seconds (12 retries * 5 seconds)
+          RETRY_COUNT=0
 
-  #         while ! docker-compose logs | grep -q "Connected to PostgreSQL"; do
-  #           if docker-compose logs | grep -q "Database connection error"; then
-  #             echo "❌ Database connection failed. Stopping GitHub Actions."
-  #             exit 1  # This will stop GitHub Actions with a failure
-  #           fi
+          while ! docker-compose logs | grep -q "Connected to PostgreSQL"; do
+            if docker-compose logs | grep -q "Database connection error"; then
+              echo "❌ Database connection failed. Stopping GitHub Actions."
+              exit 1  # This will stop GitHub Actions with a failure
+            fi
 
-  #           if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-  #             echo "❌ Timed out waiting for AWS connection. Stopping GitHub Actions."
-  #             exit 1
-  #           fi
+            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+              echo "❌ Timed out waiting for AWS connection. Stopping GitHub Actions."
+              exit 1
+            fi
 
-  #           echo "⏳ Waiting for AWS connection... (Attempt $((RETRY_COUNT+1))/$MAX_RETRIES)"
-  #           sleep 5
-  #           RETRY_COUNT=$((RETRY_COUNT+1))
-  #         done
+            echo "⏳ Waiting for AWS connection... (Attempt $((RETRY_COUNT+1))/$MAX_RETRIES)"
+            sleep 5
+            RETRY_COUNT=$((RETRY_COUNT+1))
+          done
 
-  #         echo "✅ AWS connection established."
+          echo "✅ AWS connection established."
 
-  #     - name: Push Docker images to Docker Hub
-  #       run: |
-  #         docker-compose -f docker-compose.yml push
+      - name: Push Docker images to Docker Hub
+        run: |
+          docker-compose -f docker-compose.yml push
           
-  #     - name: Shut down Docker Compose
-  #       run: |
-  #         docker-compose down
+      - name: Shut down Docker Compose
+        run: |
+          docker-compose down
     
-  # snyk_scan:
-  #   needs: build-and-test
-  #   runs-on: ubuntu-latest
-  #   steps:   
-  #   - name: Run Snyk to check backend Docker image for vulnerabilities
-  #     uses: snyk/actions/docker@master
-  #     continue-on-error: true
-  #     env:
-  #       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-  #     with:
-  #       image: ${{ secrets.DOCKERHUB_USERNAME }}/backend:0.1
+  snyk_scan:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:   
+    - name: Run Snyk to check backend Docker image for vulnerabilities
+      uses: snyk/actions/docker@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/backend:0.1
 
-  #   - name: Run Snyk to check frontend Docker image for vulnerabilities
-  #     uses: snyk/actions/docker@master
-  #     continue-on-error: true
-  #     env:
-  #       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-  #     with:
-  #       image: ${{ secrets.DOCKERHUB_USERNAME }}/frontend:0.1
+    - name: Run Snyk to check frontend Docker image for vulnerabilities
+      uses: snyk/actions/docker@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/frontend:0.1
 
-  #   - name: Delete frontend image from Docker Hub
-  #     run: |
-  #       IMAGE_NAME="vinetage/frontend"
-  #       TAG="0.1"
-  #       curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
-  #            -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
+    - name: Delete frontend image from Docker Hub
+      run: |
+        IMAGE_NAME="vinetage/frontend"
+        TAG="0.1"
+        curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
+             -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
 
-  #   - name: Delete backend image from Docker Hub
-  #     run: |
-  #       IMAGE_NAME="vinetage/backend"
-  #       TAG="0.1"
-  #       curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
-  #            -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
+    - name: Delete backend image from Docker Hub
+      run: |
+        IMAGE_NAME="vinetage/backend"
+        TAG="0.1"
+        curl -X DELETE "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${TAG}/" \
+             -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}"
 
   deploy-to-ec2:
-    # needs: snyk_scan
+    needs: snyk_scan
     runs-on: ubuntu-latest
     environment:
       name: EC2_Deployment
