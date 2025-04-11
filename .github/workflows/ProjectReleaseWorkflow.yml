@@ -1,16 +1,12 @@
-name: Build and Test Docker Compose
-
+name: Project Release Workflow
 on:
   push:
     branches:
-      - release  # branch for the release (Runs when the code is merged into release)
-  # pull_request:
-  #   branches:
-  #     - release  # trigger on PR to the release branch
+      - release  
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest  # Ubuntu for now can change to different one
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out the code
@@ -27,8 +23,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}  # Add your Docker Hub username to GitHub Secrets
-          password: ${{ secrets.DOCKERHUB_TOKEN }}  # Add your Docker Hub token to GitHub Secrets
+          username: ${{ secrets.DOCKERHUB_USERNAME }} 
+          password: ${{ secrets.DOCKERHUB_TOKEN }} 
 
       - name: Build and run Docker Compose
         run: |
@@ -57,22 +53,16 @@ jobs:
 
           echo "✅ AWS connection established."
 
-
       - name: Push Docker images to Docker Hub
         run: |
           docker-compose -f docker-compose.yml push
-
-      # - name: Run tests
-      #   run: |
-      #     # Replace this with your actual test command (e.g., inside the container)
-      #     docker-compose exec <your-service-name> npm run test
           
       - name: Shut down Docker Compose
         run: |
           docker-compose down
     
   snyk_scan:
-    needs: build-and-test  # Runs after successful build and test
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:   
     - name: Run Snyk to check backend Docker image for vulnerabilities
