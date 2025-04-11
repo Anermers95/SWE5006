@@ -120,9 +120,9 @@ const Analytics = () => {
     try {
       // Fetch all necessary data
       const [bookingsRes, usersRes, roomsRes] = await Promise.all([
-        axios.get(`${API_URL}3000/booking`),
-        axios.get(`${API_URL}3000/users`),
-        axios.get(`${API_URL}3000/rooms`)
+        axios.get(`${API_URL}/booking`),
+        axios.get(`${API_URL}/users`),
+        axios.get(`${API_URL}/rooms`)
       ]);
       
       setBookings(bookingsRes.data);

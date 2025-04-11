@@ -128,7 +128,7 @@ const BookingModal = ({
     
     try {
       // Get all bookings
-      const response = await axios.get(`${API_URL}3000/booking`);
+      const response = await axios.get(`${API_URL}/booking`);
       
       // Filter bookings for this room that are not cancelled
       const roomBookings = response.data.filter((booking: BookingData) => 
