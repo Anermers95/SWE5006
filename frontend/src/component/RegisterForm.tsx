@@ -1,6 +1,7 @@
 import { Link,useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const RegisterForm = () => {
   const navigate = useNavigate(); // Use navigate hook
@@ -60,7 +61,7 @@ const RegisterForm = () => {
       // Exclude confirmPassword from the request data
       const { confirmPassword, ...dataToSend } = formData; // This removes confirmPassword from formData
       const response = await axios.post(
-        "http://localhost:3000/users", 
+        `${API_URL}/users`, 
         dataToSend, 
         {
           headers: {

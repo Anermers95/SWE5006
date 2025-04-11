@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
-
+const API_URL = import.meta.env.VITE_API_URL;
 // Define interfaces based on your data structure
 interface BookingData {
   booking_id: number;
@@ -120,9 +120,9 @@ const Analytics = () => {
     try {
       // Fetch all necessary data
       const [bookingsRes, usersRes, roomsRes] = await Promise.all([
-        axios.get('http://localhost:3000/booking'),
-        axios.get('http://localhost:3000/users'),
-        axios.get('http://localhost:3000/rooms')
+        axios.get(`${API_URL}3000/booking`),
+        axios.get(`${API_URL}3000/users`),
+        axios.get(`${API_URL}3000/rooms`)
       ]);
       
       setBookings(bookingsRes.data);

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
 import BookingModal from "./BookingModal";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface Room {
   room_id: number;
@@ -154,7 +155,7 @@ const RoomListings = () => {
     setLoading(true);
     try {
       // Call the API to get all rooms
-      const response = await axios.get('http://localhost:3000/rooms');
+      const response = await axios.get(`${API_URL}/rooms`);
       
       if (response.data && Array.isArray(response.data)) {
         // Filter rooms that are active (is_active is true)
@@ -188,7 +189,7 @@ const RoomListings = () => {
   const fetchBookings = async () => {
     try {
       // Call the API to get all bookings
-      const response = await axios.get('http://localhost:3000/booking');
+      const response = await axios.get(`${API_URL}/booking`);
       
       if (response.data && Array.isArray(response.data)) {
         setBookings(response.data);
