@@ -150,12 +150,6 @@ const LoginForm = () => {
           </div>
 
           <div className="flex items-center justify-between mt-6">
-            <a
-              href="#"
-              className="text-base text-gray-600 dark:text-gray-200 hover:text-gray-500"
-            >
-              Forgot Password?
-            </a>
 
             <button
               type="submit"
