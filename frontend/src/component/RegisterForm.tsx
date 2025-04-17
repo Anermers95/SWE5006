@@ -110,12 +110,6 @@ const RegisterForm = () => {
                 <h1 className="text-gray-500 dark:text-gray-300">Select type of account</h1>
                 <div className="mt-3 md:flex md:items-center md:-mx-2">
                   <button
-                    onClick={() => handleAccountTypeChange("1")}
-                    className={`flex justify-center w-full px-6 py-3 rounded-lg md:w-auto md:mx-2 focus:outline-none ${formData.role_id === "1" ? "bg-blue-500 text-white" : "text-blue-500 bg-white border border-blue-500"}`}
-                  >
-                    Admin
-                  </button>
-                  <button
                     onClick={() => handleAccountTypeChange("2")}
                     className={`flex justify-center w-full px-6 py-3 rounded-lg md:w-auto md:mx-2 focus:outline-none ${formData.role_id === "2" ? "bg-blue-500 text-white" : "text-blue-500 bg-white border border-blue-500"}`}
                   >
