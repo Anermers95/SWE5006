@@ -36,7 +36,7 @@ async function initBatchJobs() {
 // Add an admin endpoint to manually trigger the job if needed
 app.post('/admin/update-expired-bookings', async (req, res) => {
   try {
-    const { runJobNow } = require('../middleware/checkBookingStatus');
+    const { runJobNow } = require('../src/middleware/checkBookingStatus');
     const updatedCount = await runJobNow();
     
     res.json({
