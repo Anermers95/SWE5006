@@ -28,7 +28,7 @@ const getRoomById = async (req, res) => {
     }
 };
 
-// Get a room by ID
+// Get a room by Name
 const getRoomByName = async (req, res) => {
     try {
         const name = req.body;
@@ -73,6 +73,9 @@ const updateRoom = async (req, res) => {
 
         // Check if room name or building name is unchange
         const room = await roomModel.getById(req.params.id);
+        if (!room) {
+            return res.status(404).json({ message: 'Room not found' });
+        }
         if (room.room_name === roomName && room.building_name === buildingName) {
             console.log('Pass');
         } else {
