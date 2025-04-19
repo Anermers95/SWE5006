@@ -23,6 +23,7 @@ app.use('/users', userRouter);
 let userId;
 let testEmail = `testuser_${Date.now()}@example.com`;
 let createdUserId;
+let newUserId;
 describe('User Routes', () => {
     beforeAll(async () => {
         const { rows } = await pool.query(
@@ -40,7 +41,9 @@ describe('User Routes', () => {
         await pool.query('DELETE FROM T_USERS WHERE USER_EMAIL = $1', [testEmail]);
         // let newUserEmail = 'newuser@example.com'
         await pool.query('DELETE FROM T_USERS WHERE USER_EMAIL = $1', [createdUserId]);
-
+        if(newUserId) {
+            await pool.query('DELETE FROM T_USERS WHERE USER_ID = $1', [newUserId]);
+        }
     })
 
     it('GET /users - should call getAllUsers', async () => {
@@ -66,6 +69,7 @@ describe('User Routes', () => {
         role_id: 1,
         is_active: true };
     const response = await request(app).post('/users').send(newUser);
+    newUserId = response.body.user.user_id; // Store the created user ID for cleanup
     expect(response.status).toBe(201);
   });
 

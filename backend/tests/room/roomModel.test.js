@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, test } from 'vitest';
 import pool from './../../src/config/db'; // Adjust the path as necessary
-import { getAll, getById, create, update, deleteRoom, getByName } from '../../src/models/roomModel';
+import { getAll, getById, create, update, deleteRoom, getByName, getByRoomAndBuilding } from '../../src/models/roomModel';
 
 describe('Room Model', () => {
     let testRoomId;
@@ -12,7 +12,7 @@ describe('Room Model', () => {
             ['room test6', 5, 'Lecture', "Block test", true]
         );
         testRoomId = rows[0].room_id;
-      });
+    });
 
     afterAll(async () => {
         // Teardown: Delete the test room
@@ -26,9 +26,20 @@ describe('Room Model', () => {
     });
 
     it('should get a room by ID', async () => {
+        console.log('[TEST] testRoomId:', testRoomId);
         const room = await getById(testRoomId);
         expect(room).toBeDefined();
         expect(room.room_id).toBe(testRoomId);
+    });
+
+    it('should return undefined for non-existent room ID', async () => {
+        const room = await getById(999999); 
+        expect(room).toBeUndefined();
+    });
+    
+    it('should return undefined for non-existent room name', async () => {
+        const room = await getByName('non-existent-room-name');
+        expect(room).toBeUndefined();
     });
 
     it('should get a room by name', async () => {
@@ -59,6 +70,13 @@ describe('Room Model', () => {
         });
         expect(updatedRoom).toBeDefined();
         expect(updatedRoom.room_name).toBe('room update');
+    });
+
+    it('should get a room by name and building name', async () => {
+        const room = await getByRoomAndBuilding('room update', 'block update');
+        expect(room).toBeDefined();
+        expect(room.room_name).toBe('room update');
+        expect(room.building_name).toBe('block update');
     });
 
     it('should delete a room', async () => {
