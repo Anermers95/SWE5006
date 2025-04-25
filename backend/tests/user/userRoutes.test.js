@@ -21,13 +21,14 @@ app.use(cors());
 app.use(express.json());
 app.use('/users', userRouter);
 let userId;
-
+let testEmail = `testuser_${Date.now()}@example.com`;
+let createdUserId;
 describe('User Routes', () => {
     beforeAll(async () => {
         const { rows } = await pool.query(
             `INSERT INTO T_USERS (USER_EMAIL, USER_FULL_NAME, USER_PASSWORD, USER_ROLE_ID, CREATED_ON, UPDATED_ON, IS_ACTIVE) 
              VALUES ($1, $2, $3, $4, NOW(), NOW(), $5) RETURNING USER_ID`,
-            ['test2@example.com', 'Test User', 'password123', 1, true]
+            [testEmail, 'Test User', 'password123', 1, true]
         );
         userId = rows[0].user_id;
 
@@ -35,10 +36,10 @@ describe('User Routes', () => {
       });
     
     afterAll(async()=>{
-        let email = 'test2@example.com';
-        await pool.query('DELETE FROM T_USERS WHERE USER_EMAIL = $1', [email]);
-        let newUserEmail = 'newuser@example.com'
-        await pool.query('DELETE FROM T_USERS WHERE USER_EMAIL = $1', [newUserEmail]);
+        // let email = 'test2@example.com';
+        await pool.query('DELETE FROM T_USERS WHERE USER_EMAIL = $1', [testEmail]);
+        // let newUserEmail = 'newuser@example.com'
+        await pool.query('DELETE FROM T_USERS WHERE USER_EMAIL = $1', [createdUserId]);
 
     })
 
@@ -59,7 +60,7 @@ describe('User Routes', () => {
   });
 
   it('POST /users - should call createUser', async () => {
-    const newUser = { email: 'newuser@example.com',
+    const newUser = { email: `newuser_${Date.now()}@example.com`,
         full_name: 'New User',
         password: 'newpassword123',
         role_id: 1,

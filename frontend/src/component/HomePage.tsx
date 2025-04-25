@@ -1,7 +1,11 @@
-import React from "react";
 import Navbar from "./navbar";
 
 const HomePage = () => {
+  // navigate to login page
+  const login = () => {
+    window.location.href = "/login";
+  };
+  
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-blue-50 via-white to-blue-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
       <Navbar />
@@ -10,15 +14,14 @@ const HomePage = () => {
           <div className="w-full lg:w-1/2">
             <div className="lg:max-w-lg">
               <h1 className="text-4xl font-bold text-gray-800 dark:text-white lg:text-5xl">
-                Best place to manage <br /> your{" "}
+                Best place to manage <br /> your school{" "}
                 <span className="text-blue-500">bookings</span>
               </h1>
               <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">
-                Easily book and manage your appointments online. Get started
-                today!
+                Easily book and manage your rooms online.
               </p>
-              <button className="px-8 py-3 text-lg font-semibold tracking-wide text-white capitalize transition-colors duration-300 transform bg-blue-500 rounded-lg hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50">
-                Manage Bookings
+              <button onClick={login} className="px-8 py-3 text-lg font-semibold tracking-wide text-white capitalize transition-colors duration-300 transform bg-blue-500 rounded-lg hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50">
+                Login here
               </button>
             </div>
           </div>

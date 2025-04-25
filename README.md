@@ -1,7 +1,7 @@
 # SWE5006 (GROUP 1)
 Grad cert project test
 
-# Running Docker commands
+# Running Docker commands 
 ```
 // This build and start the application
 docker compose up --build
