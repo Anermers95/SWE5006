@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import Navbar from "./navbar";
 import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL;
-
 // Define interfaces based on your data structure
 interface BookingData {
   booking_id: number;
@@ -39,7 +38,6 @@ interface BookingMetric {
   percentChange: number;
   label: string;
 }
-
 interface DailyBooking {
   day: number;
   count: number;
@@ -59,7 +57,31 @@ interface TopBuilding {
   building_name: string;
   bookings: number;
 }
+const getStartOfWeek = (date: Date): Date => {
+  const day = date.getDay(); // 0 (Sun) - 6 (Sat)
+  const diff = (day === 0 ? -6 : 1) - day; // Adjust if week starts on Monday
+  const start = new Date(date);
+  start.setDate(date.getDate() + diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
 
+const getEndOfWeek = (start: Date): Date => {
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
+const addWeeks = (date: Date, numWeeks: number): Date => {
+  const newDate = new Date(date);
+  newDate.setDate(date.getDate() + numWeeks * 7);
+  return getStartOfWeek(newDate);
+};
+
+const formatDateRange = (start: Date, end: Date): string => {
+  return `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+};
 const Analytics = () => {
   // State for data
   const [bookings, setBookings] = useState<BookingData[]>([]);
@@ -67,7 +89,12 @@ const Analytics = () => {
   const [rooms, setRooms] = useState<RoomData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
+  const [weekdayBookings, setWeekdayBookings] = useState<number[]>([]);
+  const [timeOfWeekBookings, setTimeOfWeekBookings] = useState<number[][]>([]);
+  const [weeklyBookingCards, setWeeklyBookingCards] = useState<BookingData[]>([]);
+
+
   // State for derived analytics
   const [metrics, setMetrics] = useState<BookingMetric[]>([]);
   const [dailyBookings, setDailyBookings] = useState<DailyBooking[]>([]);
@@ -75,7 +102,6 @@ const Analytics = () => {
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [topBuildings, setTopBuildings] = useState<TopBuilding[]>([]);
   const [activeUsers, setActiveUsers] = useState<number>(0);
-  
   // Date range filter
   const [dateRange, setDateRange] = useState<string>("30 days");
   
@@ -87,7 +113,7 @@ const Analytics = () => {
     if (bookings.length > 0 && rooms.length > 0 && users.length > 0) {
       calculateAnalytics();
     }
-  }, [bookings, rooms, users, dateRange]);
+  }, [bookings, rooms, users, currentWeekStart]);
   
   const fetchData = async () => {
     setLoading(true);
@@ -111,27 +137,33 @@ const Analytics = () => {
       setLoading(false);
     }
   };
-  
+
   const calculateAnalytics = () => {
     // Filter bookings based on selected date range
-    const daysToInclude = dateRange === "7 days" ? 7 : 
-                         dateRange === "30 days" ? 30 : 
-                         dateRange === "12 months" ? 365 : 1;
+    const weekStartUTC = new Date(Date.UTC(
+      currentWeekStart.getFullYear(),
+      currentWeekStart.getMonth(),
+      currentWeekStart.getDate()
+    ));
+    const weekEndUTC = new Date(weekStartUTC);
+    weekEndUTC.setUTCDate(weekStartUTC.getUTCDate() + 6);
+    weekEndUTC.setUTCHours(23, 59, 59, 999);
     
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysToInclude);
-    
+    // Bookings in current week
     const filteredBookings = bookings.filter(booking => {
       const bookingDate = new Date(booking.start_time);
-      return bookingDate >= cutoffDate;
+      return bookingDate >= weekStartUTC && bookingDate <= weekEndUTC;
     });
     
-    const previousPeriodCutoff = new Date(cutoffDate);
-    previousPeriodCutoff.setDate(previousPeriodCutoff.getDate() - daysToInclude);
+    // Previous week
+    const previousWeekStartUTC = new Date(weekStartUTC);
+    previousWeekStartUTC.setUTCDate(weekStartUTC.getUTCDate() - 7);
+    const previousWeekEndUTC = new Date(weekEndUTC);
+    previousWeekEndUTC.setUTCDate(weekEndUTC.getUTCDate() - 7);
     
     const previousPeriodBookings = bookings.filter(booking => {
       const bookingDate = new Date(booking.start_time);
-      return bookingDate >= previousPeriodCutoff && bookingDate < cutoffDate;
+      return bookingDate >= previousWeekStartUTC && bookingDate <= previousWeekEndUTC;
     });
     
     // Get active (not cancelled) bookings
@@ -158,10 +190,10 @@ const Analytics = () => {
     // Calculate utilization rate
     const totalRooms = rooms.filter(r => r.is_active).length;
     const availableHoursPerDay = 12; // Assuming 12 hours per day
-    const totalAvailableHours = totalRooms * daysToInclude * availableHoursPerDay;
+    const totalAvailableHours = totalRooms * 7 * availableHoursPerDay;
     const utilizationPercent = (totalHours / totalAvailableHours) * 100;
     
-    const previousTotalAvailableHours = totalRooms * daysToInclude * availableHoursPerDay;
+    const previousTotalAvailableHours = totalRooms * 7 * availableHoursPerDay;
     const previousUtilizationPercent = (previousTotalHours / previousTotalAvailableHours) * 100;
     
     // Calculate average booking duration
@@ -182,11 +214,6 @@ const Analytics = () => {
         label: "Total Bookings"
       },
       {
-        value: `${totalRooms}`,
-        percentChange: 0, // Room count likely doesn't change period to period
-        label: "Total Rooms"
-      },
-      {
         value: `${Math.round(utilizationPercent)}%`,
         percentChange: previousUtilizationPercent === 0 ? 0 :
           ((utilizationPercent - previousUtilizationPercent) / previousUtilizationPercent) * 100,
@@ -199,7 +226,6 @@ const Analytics = () => {
         label: "Avg Duration"
       }
     ]);
-    
     // Set active users count
     setActiveUsers(uniqueUserIds.size);
     
@@ -209,6 +235,14 @@ const Analytics = () => {
                dateRange === "24 hours" ? 24 : 31;
     
     const dailyData: DailyBooking[] = [];
+    const weekBookings = bookings
+      .filter(booking => {
+        const date = new Date(booking.start_time);
+        return booking.is_active && date >= weekStartUTC && date <= weekEndUTC;
+      })
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+    setWeeklyBookingCards(weekBookings);
     
     if (dateRange === "24 hours") {
       // For 24 hours, group by hour
@@ -307,6 +341,47 @@ const Analytics = () => {
       .slice(0, 5);
     
     setTopBuildings(buildingsData);
+    const startHour = 9;
+    const endHour = 21; // exclusive
+    const totalSlots = endHour - startHour;
+
+    const weekdayCounts = Array(7).fill(0); // Mon–Sun
+    const timeGrid = Array(7).fill(0).map(() => Array(totalSlots).fill(0));
+
+    activeBookings.forEach(booking => {
+      const date = new Date(booking.start_time);
+      const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000); // Normalize to local time if needed
+
+      // Convert to local if needed (optional)
+      const start = new Date(booking.start_time);
+      const end = new Date(booking.end_time);
+
+      const day = (start.getUTCDay() + 6) % 7;
+      const startHour = start.getUTCHours() ;
+      const endHour = end.getUTCHours() ;
+      
+      if (day >= 0 && day < 7) {
+        weekdayCounts[day]++;
+        for (let h = startHour; h < endHour; h++) {
+          const slot = h - 9; // 9am is the first slot
+          if (slot >= 0 && slot <= 12) {
+            timeGrid[day][slot]++;
+          }
+        }
+      }
+
+    });
+
+
+    setWeekdayBookings(weekdayCounts);
+    setTimeOfWeekBookings(timeGrid);
+  };
+  const getWeekDates = (start: Date): string[] => {
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+    });
   };
   
   // Format duration as a readable string (e.g., "2h 30m")
@@ -323,10 +398,12 @@ const Analytics = () => {
   
   // Get maximum value for chart scaling
   const getMaxValue = (): number => {
-    if (!dailyBookings.length) return 100;
-    return Math.max(...dailyBookings.map(day => day.count)) * 1.2;
-  };
+      if (!dailyBookings.length) return 100;
+      return Math.max(...dailyBookings.map(day => day.count)) * 1.2;
+    };
+
   
+
   return (
     <div className="flex flex-col w-full min-h-screen">
       {/* Top Navigation */}
@@ -377,89 +454,126 @@ const Analytics = () => {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-800">Analytics</h2>
-                  <p className="text-gray-600 text-sm">Booking activity of last {dateRange}</p>
+                  <p className="text-gray-600 text-sm">
+                    Booking activity of {formatDateRange(currentWeekStart, getEndOfWeek(currentWeekStart))}
+                  </p>
                 </div>
-                <div className="flex rounded-md shadow-sm">
+                <div className="flex space-x-2 items-center">
                   <button
-                    onClick={() => setDateRange("12 months")}
-                    className={`px-4 py-2 text-sm font-medium rounded-l-md  ${
-                      dateRange === "12 months"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    } border border-gray-300`}
+                    onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, -1))}
+                    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
                   >
-                    12 months
+                    ←
                   </button>
                   <button
-                    onClick={() => setDateRange("30 days")}
-                    className={`px-4 py-2 text-sm font-medium ${
-                      dateRange === "30 days"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    } border-t border-b border-gray-300`}
+                    onClick={() => setCurrentWeekStart(getStartOfWeek(new Date()))}
+                    className="px-4 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm"
                   >
-                    30 days
+                    This Week
                   </button>
                   <button
-                    onClick={() => setDateRange("7 days")}
-                    className={`px-4 py-2 text-sm font-medium ${
-                      dateRange === "7 days"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    } border-t border-b border-gray-300`}
+                    onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, 1))}
+                    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
                   >
-                    7 days
-                  </button>
-                  <button
-                    onClick={() => setDateRange("24 hours")}
-                    className={`px-4 py-2 text-sm font-medium rounded-r-md ${
-                      dateRange === "24 hours"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    } border border-gray-300`}
-                  >
-                    24 hours
+                    →
                   </button>
                 </div>
               </div>
+
               
-              {/* Booking Chart */}
-              <div className="bg-white rounded-lg p-4 mb-8">
-                <div className="h-80">
-                  {dailyBookings.length > 0 ? (
-                    <div className="flex items-end h-64 space-x-2 overflow-x-auto pb-2 px-4">
-                      {dailyBookings.map((item, index) => {
-                        const maxValue = getMaxValue();
-                        const heightPercentage = maxValue > 0 ? (item.count / maxValue) * 100 : 0;
-                        
-                        return (
-                          <div key={index} className="flex flex-col items-center flex-shrink-0">
-                            <div 
-                              className="w-10 bg-blue-500 rounded-t hover:bg-blue-600 transition-all"
-                              style={{ height: `${heightPercentage}%`, minHeight: '4px' }}
-                            >
-                              <div className="h-full w-full flex items-center justify-center">
-                                {item.count > 0 && (
-                                  <span className="text-xs text-white font-medium">
-                                    {item.count}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-xs mt-1 font-medium text-gray-500 w-10 text-center">
-                              {item.day}
-                            </div>
+              {/* Booking Charts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white rounded-lg p-4 shadow h-[400px] overflow-y-auto">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Bookings This Week</h3>
+                
+                {weeklyBookingCards.length === 0 ? (
+                  <p className="text-sm text-gray-500">No bookings this week.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {weeklyBookingCards.map((booking, index) => {
+                      const room = rooms.find(r => r.room_id === booking.room_id);
+                      const user = users.find(u => u.user_id === booking.user_id);
+                      const start = new Date(booking.start_time);
+                      const end = new Date(booking.end_time);
+                      const formattedDate = start.toLocaleDateString('en-GB', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        timeZone: 'UTC'
+                      });
+                      
+                      const formattedStart = start.toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'UTC'
+                      });
+                      
+                      const formattedEnd = end.toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'UTC'
+                      });
+                      return (
+                        <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm">
+                          <div className="text-sm text-gray-800 font-medium">
+                          {formattedDate}, {formattedStart} – {formattedEnd}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                      No data available for the selected date range
-                    </div>
-                  )}
+                          <div className="text-sm text-gray-600 mt-1">
+                            📍 {room?.room_name || `Room #${booking.room_id}`}
+                          </div>
+                          {booking.booking_purpose && (
+                            <div className="text-sm text-gray-500 mt-1 truncate">
+                              📝 {booking.booking_purpose}
+                            </div>
+                          )}
+                          {user && (
+                            <div className="text-sm text-gray-400 mt-1">
+                              👤 {user.user_full_name}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+
+                {/* Visualization by Time of Week */}
+                <div className="bg-white rounded-lg p-4 shadow overflow-x-auto">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Visualization by Time of Week</h3>
+                  <div className="grid grid-cols-7 gap-1">
+                    {timeOfWeekBookings.map((day, dayIndex) => (
+                      <div key={dayIndex} className="flex flex-col items-center gap-1">
+                        {day.map((count, hourIndex) => {
+                          const intensity =
+                            count > 3 ? "bg-blue-700" :
+                            count > 2 ? "bg-blue-500" :
+                            count > 1 ? "bg-yellow-400" :
+                            count > 0 ? "bg-yellow-200" :
+                            "bg-gray-100";
+
+                          return (
+                            <div
+                              key={`${dayIndex}-${hourIndex}`}
+                              className={`w-6 h-6 ${intensity} rounded`}
+                              title={`Day ${dayIndex + 1}, ${hourIndex + 9}:00 – ${hourIndex + 10}:00 (${count} bookings)`}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+
+                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    {getWeekDates(currentWeekStart).map((label, index) => (
+                      <span key={index}>{label}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
+
               
               {/* Top Analytics Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -467,11 +581,6 @@ const Analytics = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Top Rooms</h3>
-                    <button className="text-gray-400 hover:text-gray-500">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
                   </div>
                   
                   <div>
@@ -513,11 +622,6 @@ const Analytics = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Top Buildings</h3>
-                    <button className="text-gray-400 hover:text-gray-500">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
                   </div>
                   
                   <div>
@@ -559,11 +663,6 @@ const Analytics = () => {
                 <div className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Active Users</h3>
-                    <button className="text-gray-400 hover:text-gray-500">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
                   </div>
                   
                   <div className="flex flex-col items-center">

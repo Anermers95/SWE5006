@@ -1,5 +1,7 @@
 # SWE5006 (GROUP 1)
 Grad cert project test
+(Best viewed using dark mode)
+
 
 # Running Docker commands 
 ```

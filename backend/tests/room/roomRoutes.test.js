@@ -11,6 +11,7 @@ app.use(express.json());
 app.use('/rooms', roomRouter);
 
 let roomId;
+let newRoomId;
 const uniqueSuffix = Date.now();
 let testRoomName = `Test Room ${uniqueSuffix}`;
 
@@ -26,6 +27,9 @@ describe('Room Routes', () => {
 
   afterAll(async () => {
     await pool.query('DELETE FROM t_rooms WHERE room_id = $1', [roomId]);
+    if(newRoomId) {
+      await pool.query('DELETE FROM t_rooms WHERE room_id = $1', [newRoomId]);
+    }
   });
 
   it('GET /rooms - should return all rooms', async () => {
@@ -54,6 +58,7 @@ describe('Room Routes', () => {
       is_active: true,
     };
     const response = await request(app).post('/rooms').send(newRoom);
+    newRoomId = response.body.room.room_id; 
     expect(response.status).toBe(201);
   });
 
