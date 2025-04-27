@@ -45,7 +45,7 @@ jobs:
         id: launch
         run: |
           AMI_ID=$(aws ec2 describe-images --owners amazon \
-            --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-noble-24.04-amd64-server-*" \
+            --filters "Name=name,Values=ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*" \
             --query 'Images[*].[ImageId,CreationDate]' \
             --output text | sort -k2 -r | head -n1 | awk '{print $1}')
 
