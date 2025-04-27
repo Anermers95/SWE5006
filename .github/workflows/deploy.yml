@@ -86,8 +86,8 @@ jobs:
 
       - name: Deploy app on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
-            export PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP <<EOF
+            export PUBLIC_IP=$PUBLIC_IP
             sudo apt update
             sudo apt install -y docker.io docker-compose git
             sudo usermod -a -G docker ubuntu
@@ -95,7 +95,8 @@ jobs:
             newgrp docker
             git clone -b release https://${{ secrets.GH_DEPLOY_TOKEN }}@github.com/${{ github.repository }} app
             cd app
-            sed -i "s|VITE_API_URL=http://localhost:3000|VITE_API_URL=http://$PUBLIC_IP:3000|" frontend/.env
+            sed -i 's|VITE_API_URL=http://localhost:3000|VITE_API_URL=http://'"$PUBLIC_IP"':3000|' frontend/.env
+            echo "✅ Updated .env file:"
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             docker-compose up -d --build
           EOF
