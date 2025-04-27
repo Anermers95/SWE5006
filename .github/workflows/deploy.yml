@@ -89,15 +89,19 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
             export PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
             sudo apt update
-            sudo apt install -y docker.io docker-compose git
-            sudo usermod -a -G docker ubuntu
-            id ubuntu
-            newgrp docker
+            sudo apt-get install -y ca-certificates curl gnupg lsb-release
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo usermod -aG docker ubuntu
+            sudo systemctl restart docker
             git clone -b release https://${{ secrets.GH_DEPLOY_TOKEN }}@github.com/${{ github.repository }} app
             cd app
             sed -i 's|VITE_API_URL=http://localhost:3000|VITE_API_URL=http://'"$PUBLIC_IP"':3000|' frontend/.env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            docker-compose up -d --build
+            docker compose up -d --build
           EOF
           
       - name: Display deployed app URL
