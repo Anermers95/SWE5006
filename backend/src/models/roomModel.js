@@ -9,7 +9,7 @@ const getAll = async () => {
 // Get room by ID
 const getById = async (id) => {
     const { rows } = await pool.query('SELECT * FROM t_rooms WHERE room_id = $1', [id]);
-    return rows[0]; // Return single room object
+    return rows[0];
 };
 
 // Get room by name
@@ -35,7 +35,6 @@ const create = async ({ roomName, capacity, room_type, buildingName, is_active }
     return rows[0]; // Return created room
 };
 
-
 // Update room by ID
 const update = async (id, {roomName, capacity, room_type, buildingName, is_active }) => {
     console.log(roomName);
@@ -54,4 +53,4 @@ const deleteRoom = async (id) => {
     return rowCount > 0; // Return true if deleted, false otherwise
 };
 
-module.exports = { getAll, getById, create, update, deleteRoom,getByName, getByRoomAndBuilding};
+module.exports = { getAll, getById, create, update, deleteRoom, getByName, getByRoomAndBuilding};
