@@ -138,7 +138,7 @@ const EditBookingModal = ({ isOpen, onClose, booking, onEditSuccess }: EditBooki
         const bookingDate = b.start_time.split('T')[0];
         return bookingDate === selectedDate && 
                b.status !== 'cancelled' && 
-               b.booking_id !== booking.booking_id;
+               b.booking_id == booking.booking_id;
       });
       
       // Create array of booked time slots
