@@ -34,6 +34,8 @@ jobs:
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           DB_PORT: ${{ secrets.DB_PORT }}
         run: |
+          echo "DATABASE_USER=TestUser" >> $GITHUB_ENV
+
           docker-compose -f docker-compose.yml up -d --build
           docker-compose logs
           echo "Waiting for AWS connection..."
