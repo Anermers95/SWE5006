@@ -99,6 +99,7 @@ jobs:
             echo "✅ Updated .env file:"
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             docker-compose up -d --build
+            echo "test"
           EOF
           
       - name: Display deployed app URL
