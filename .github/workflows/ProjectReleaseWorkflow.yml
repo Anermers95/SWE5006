@@ -33,6 +33,11 @@ jobs:
           DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           DB_PORT: ${{ secrets.DB_PORT }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN : ${{ secrets.JWT_EXPIRES_IN }}
+          GMAIL_HOST : ${{ secrets.GMAIL_HOST }}
+          GMAIL_USER : ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS : ${{ secrets.GMAIL_PASS }}
         run: |
           echo "DATABASE_USER=TestUser" >> $GITHUB_ENV
 
@@ -106,6 +111,17 @@ jobs:
   Unit-Tests:
     needs: snyk_scan
     runs-on: ubuntu-latest
+    env:
+      DATABASE_USER: ${{ secrets.DATABASE_USER }}
+      DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+      DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+      DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+      GMAIL_HOST: ${{ secrets.GMAIL_HOST }}
+      GMAIL_USER: ${{ secrets.GMAIL_USER }}
+      GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
