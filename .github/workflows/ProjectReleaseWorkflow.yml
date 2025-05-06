@@ -27,6 +27,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }} 
 
       - name: Build and run Docker Compose
+        env:
+          DATABASE_USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DB_PORT: ${{ secrets.DB_PORT }}
         run: |
           docker-compose -f docker-compose.yml up -d --build
           docker-compose logs
