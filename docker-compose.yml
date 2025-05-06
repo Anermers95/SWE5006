@@ -1,6 +1,17 @@
 version: '3.8'
 services:
   backend:
+    environment:
+    - DATABASE_USER=${DATABASE_USER}
+    - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+    - DATABASE_HOST=${DATABASE_HOST}
+    - DATABASE_NAME=${DATABASE_NAME}
+    - DATABASE_PORT=${DATABASE_PORT}
+    - JWT_SECRET=${JWT_SECRET}
+    - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+    - GMAIL_HOST=${GMAIL_HOST}
+    - GMAIL_USER=${GMAIL_USER}
+    - GMAIL_PASS=${GMAIL_PASS}
     build: ./backend
     image: "vinetage/backend:0.1"
     ports:

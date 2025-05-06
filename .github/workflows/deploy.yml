@@ -88,6 +88,16 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem ubuntu@$PUBLIC_IP << 'EOF'
             export PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+            export DATABASE_USER="${{ secrets.DATABASE_USER }}"
+            export DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}"
+            export DATABASE_HOST="${{ secrets.DATABASE_HOST }}"
+            export DATABASE_NAME="${{ secrets.DATABASE_NAME }}"
+            export DATABASE_PORT="${{ secrets.DATABASE_PORT }}"
+            export GMAIL_HOST="${{ secrets.GMAIL_HOST }}"
+            export GMAIL_USER="${{ secrets.GMAIL_USER }}"
+            export GMAIL_PASS="${{ secrets.GMAIL_PASS }}"
+            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            export JWT_EXPIRES_IN="${{ secrets.JWT_EXPIRES_IN }}"
             sudo apt update
             sudo apt install -y docker.io docker-compose git
             sudo usermod -a -G docker ubuntu
