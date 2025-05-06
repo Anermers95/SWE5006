@@ -95,20 +95,6 @@ jobs:
             newgrp docker
             git clone -b release https://${{ secrets.GH_DEPLOY_TOKEN }}@github.com/${{ github.repository }} app
             cd app
-
-            cat <<EOT > .env
-            DATABASE_USER=${{ secrets.DATABASE_USER }}
-            DATABASE_HOST=${{ secrets.DATABASE_HOST }}
-            DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-            DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-            DATABASE_PORT=${{ secrets.DATABASE_PORT }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
-            GMAIL_HOST=${{ secrets.GMAIL_HOST }}
-            GMAIL_USER=${{ secrets.GMAIL_USER }}
-            GMAIL_PASS=${{ secrets.GMAIL_PASS }}
-            EOT
-            
             sed -i 's|VITE_API_URL=http://localhost:3000|VITE_API_URL=http://'"$PUBLIC_IP"':3000|' frontend/.env
             echo "✅ Updated .env file:"
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
