@@ -8,11 +8,11 @@ services:
     - DATABASE_HOST=${DATABASE_HOST}
     - DATABASE_NAME=${DATABASE_NAME}
     - DATABASE_PORT=${DATABASE_PORT}
-    - JWT_SECRET=${{ secrets.JWT_SECRET }}
-    - JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
-    - GMAIL_HOST=${{ secrets.GMAIL_HOST }}
-    - GMAIL_USER=${{ secrets.GMAIL_USER }}
-    - GMAIL_PASS=${{ secrets.GMAIL_PASS }}
+    - JWT_SECRET=${secrets.JWT_SECRET }
+    - JWT_EXPIRES_IN=${secrets.JWT_EXPIRES_IN }
+    - GMAIL_HOST=${secrets.GMAIL_HOST}
+    - GMAIL_USER=${secrets.GMAIL_USER }
+    - GMAIL_PASS=${secrets.GMAIL_PASS}
     image: "vinetage/backend:0.1"
     ports:
       - "3000:3000"
